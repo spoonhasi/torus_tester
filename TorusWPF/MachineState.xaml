@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="TorusWPF.MachineState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TorusWPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="108" d:DesignWidth="1000">
+    <Grid>
+        <Grid x:Name="GridMain" Margin="0,0,0,0" Width="1000" Height="108">
+            <Border BorderBrush="Black" BorderThickness="2">
+            </Border>
+            <TextBox x:Name="TextBoxTime" Text="" TextWrapping="Wrap" HorizontalContentAlignment="Right" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,25,0,0" Width="80" Height="77" FontSize="11"/>
+            <Button x:Name="ButtonChangeAddress" Content="ChangeAddress" HorizontalAlignment="Left" Margin="100,5,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeAddress_Click"/>
+            <Button x:Name="ButtonChangeFilter" Content="ChangeFilter" HorizontalAlignment="Left" Margin="100,25,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeFilter_Click"/>
+            <Button x:Name="ButtonOneGetData" Content="GetData" HorizontalAlignment="Left" Margin="100,45,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonOneGetData_Click"/>
+            <Button x:Name="ButtonUpdate" Content="Update" HorizontalAlignment="Left" Margin="100,65,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonUpdate_Click"/>
+            <Button x:Name="ButtonDelete" Content="X" HorizontalAlignment="Right" Margin="0,5,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDelete_Click"/>
+            <Button x:Name="ButtonUp" Content="Up" HorizontalAlignment="Right" Margin="0,45,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonUp_Click"/>
+            <Button x:Name="ButtonDown" Content="Down" HorizontalAlignment="Right" Margin="0,65,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDown_Click"/>
+            <TextBlock x:Name="TextBlockNumber" HorizontalAlignment="Left" Margin="10,5,0,0" Text="Number" TextWrapping="Wrap" VerticalAlignment="Top"/>
+            <TextBox x:Name="TextBoxAddress" HorizontalAlignment="Right" Margin="0,5,50,0" Text="Address" TextWrapping="Wrap" VerticalAlignment="Top" Width="750"/>
+            <TextBox x:Name="TextBoxFilter" HorizontalAlignment="Right" Margin="0,25,50,0" Text="Filter" TextWrapping="Wrap" VerticalAlignment="Top" Width="750"/>
+            <TextBox x:Name="TextBoxResult" HorizontalAlignment="Right" Margin="0,45,450,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="350"/>
+            <TextBox x:Name="TextBoxInputData" HorizontalAlignment="Right" Margin="0,65,450,0" Text="InputData" TextWrapping="NoWrap" VerticalAlignment="Top" Width="350"/>
+            <TextBox x:Name="TextBoxResultDescribe" HorizontalAlignment="Right" Margin="0,45,50,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="398" Height="38"/>
+            <TextBlock HorizontalAlignment="Left" Margin="130,85,0,0" Text="Memo" TextWrapping="Wrap" VerticalAlignment="Top"/>
+            <TextBox x:Name="TextBoxMemo" HorizontalAlignment="Right" Margin="0,85,50,0" Text="Memo" TextWrapping="NoWrap" VerticalAlignment="Top" Width="750"/>
+        </Grid>
+    </Grid>
+</UserControl>
