@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TorusWPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.2.0" Height="920" Width="1810">
+        Title="TorusTester C# v2.2.1" Height="920" Width="1810">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="750"></ColumnDefinition>
@@ -79,9 +79,9 @@
                                 <TextBlock HorizontalAlignment="Left" Margin="370,6,0,0" Text="종료번호" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxPlcFanucEnd" Margin="420,5,0,0" Text="D101" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="110,36,0,0" Text="타입" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                                <TextBox x:Name="TextBoxPlcKcncType" Margin="137,35,0,0" Text="1" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
+                                <TextBox x:Name="TextBoxPlcKcncType" Margin="137,35,0,0" Text="2" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="230,36,0,0" Text="시작번호" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                                <TextBox x:Name="TextBoxPlcKcncStart" Margin="280,35,0,0" Text="A" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
+                                <TextBox x:Name="TextBoxPlcKcncStart" Margin="280,35,0,0" Text="PA1431" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="370,36,0,0" Text="수량" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxPlcKcncCount" Margin="420,35,0,0" Text="1" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,90,0,0" Text="실행결과" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>

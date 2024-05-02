@@ -18,6 +18,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Reflection.PortableExecutable;
 using System.Windows.Markup;
 using Microsoft.Win32;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TorusWPF
 {
@@ -32,7 +33,7 @@ namespace TorusWPF
 
         public const string ConfigFileName = "config.ini";
     }
-    public partial class MainWindow : Window
+    public partial class MainWindow : System.Windows.Window
     {
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
@@ -1592,7 +1593,7 @@ namespace TorusWPF
             else if (cncVendorCode_ == 4 || cncVendorCode_ == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcKcncType.Text.ToString());
-                string tmpStartAddress = TextBoxPlcFanucStart.Text.ToString();
+                string tmpStartAddress = TextBoxPlcKcncStart.Text.ToString();
                 int tmpCount = Convert.ToInt32(TextBoxPlcKcncCount.Text.ToString());
                 Item tmpItem;
                 int tmpResult = Api.getPlcSignal(tmpDataType, tmpCount, tmpStartAddress, out tmpItem, tmpMachineID, timeout_);
@@ -1687,7 +1688,7 @@ namespace TorusWPF
             else if (cncVendorCode_ == 4 || cncVendorCode_ == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcKcncType.Text.ToString());
-                string tmpStartAddress = TextBoxPlcFanucStart.Text.ToString();
+                string tmpStartAddress = TextBoxPlcKcncStart.Text.ToString();
                 int tmpCount = Convert.ToInt32(TextBoxPlcKcncCount.Text.ToString());
                 string inputData = TextBoxPlcSetData.Text;
                 string[] inputDatas = inputData.Split(',');
@@ -2032,7 +2033,7 @@ namespace TorusWPF
 
         public void ObjectRename(string _objectName)
         {
-            Window tmpRenameWindow = new RenameWindow(_objectName);
+            System.Windows.Window tmpRenameWindow = new RenameWindow(_objectName);
             tmpRenameWindow.Show();
         }
 
@@ -2363,22 +2364,11 @@ namespace TorusWPF
                 int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, direct_, timeout_);
                 stopwatch.Stop();
                 //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 "status"의 값이 0이 아니라면 오류입니다.
-                for (int i = 0; i < tmpTotalCount; i++)
+                if (tmpResult == 556793903)
                 {
-                    int status = itemArray[i].GetValueInt("status");
-                    if (status == 0)
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    for (int i = 0; i < tmpTotalCount; i++)
                     {
-                        _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                        {
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResult(itemArray[i].ToString());
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(itemArray[i]));
-                            (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-                        }));
-                    }
-                    else
-                    {
-                        string tmpErrorCode = MakeErrorMessage(status, out string tmpErrorMessage);
                         _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                         {
                             (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
@@ -2386,6 +2376,34 @@ namespace TorusWPF
                             (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
                             (ListBoxMachineState.Items[i] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
                         }));
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < tmpTotalCount; i++)
+                    {
+                        int status = itemArray[i].GetValueInt("status");
+                        if (status == 0)
+                        {
+                            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                            {
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResult(itemArray[i].ToString());
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(itemArray[i]));
+                                (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                            }));
+                        }
+                        else
+                        {
+                            string tmpErrorCode = MakeErrorMessage(status, out string tmpErrorMessage);
+                            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                            {
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
+                                (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                            }));
+                        }
                     }
                 }
 
