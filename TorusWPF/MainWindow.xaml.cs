@@ -22,17 +22,17 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TorusWPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     static class Constants
     {
         // App의 고유 ID와 Name를 설정합니다. TorusTester.info 라는 파일명으로 저장되어 있습니다. TorusTester.info을 TORUS/Binary/application에 복사하고 TORUS를 실행시켜야 합니다.
         public const string AppID = "FAFC456B-FA41-40AD-B1EB-C3834076A1DC";
         public const string AppName = "TorusTester";
-
         public const string ConfigFileName = "config.ini";
     }
+
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
     public partial class MainWindow : System.Windows.Window
     {
         [DllImport("kernel32")]

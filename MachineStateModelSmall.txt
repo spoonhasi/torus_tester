@@ -1,0 +1,2 @@
+data://machine/channel/axis/machinePosition	channel=1&axis=1	4.1.2.4 해당 축의 머신 좌표계를 기준으로 한 좌표값을 정의하는 실수형 속성입니다.
+data://machine/channel/currentProgram/currentBlockCounter	channel=1	4.1.2.14 실행 중인 NC 프로그램의 블록 카운터를 나타내는 정수형 속성입니다.
