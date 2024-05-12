@@ -760,6 +760,14 @@ namespace TorusWPF
             {
                 _errCodeString = "NC_ERR_WRONG_TOOL_MODE";
             }
+            else if (result == "0x21B85000")
+            {
+                _errCodeString = "NC_ERR_NO_TOOL_GROUP";
+            }
+            else if (result == "0x21B86000")
+            {
+                _errCodeString = "NC_ERR_NO_SELECETD_FILE";
+            }
             else if (result == "0x21B90000")
             {
                 _errCodeString = "NC_ERR_INVALID_WRITE_VALUE";
@@ -767,6 +775,10 @@ namespace TorusWPF
             else if (result == "0x21B91000")
             {
                 _errCodeString = "NC_ERR_WRONG_WRITE_VALUE_LIST_COUNT";
+            }
+            else if (result == "0x21B92000")
+            {
+                _errCodeString = "NC_ERR_INAPPROPRIATE_STATUS";
             }
             else if (result == "0x21BA0000")
             {
@@ -815,6 +827,10 @@ namespace TorusWPF
             else if (result == "0x21BC6000")
             {
                 _errCodeString = "NC_ERR_WRONG_NC_FILE";
+            }
+            else if (result == "0x21BC6100")
+            {
+                _errCodeString = "NC_ERR_WRONG_NAME_OF_NC_FILE";
             }
             else if (result == "0x21BC7000")
             {
@@ -1003,28 +1019,20 @@ namespace TorusWPF
             filter_Array[2] = "machine=" + tmpMachineID.ToString();
             int result = Api.getData(addressArray, filter_Array, out Item[] itemArray, true, timeout_);
             //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 항목을 살펴서 "error"가 포함되어 있다면 오류, 아니라면 정상값입니다.
-            for (int i = 0; i < itemArray.Length; i++)
+            if (result == 556793903)
             {
-                if (itemArray[i] != null)
+                TextBlockMemoryTotal.Text = "오류";
+                TextBlockMemoryUsed.Text = "오류";
+                TextBlockMemoryFree.Text = "오류";
+            }
+            else
+            {
+                for (int i = 0; i < itemArray.Length; i++)
                 {
-                    string stringValue = itemArray[i].GetValueString("value");
-                    if (stringValue.Contains("error"))
+                    int status = itemArray[i].GetValueInt("status");
+                    if (status == 0)
                     {
-                        if (i == 0)
-                        {
-                            TextBlockMemoryTotal.Text = "오류";
-                        }
-                        else if (i == 1)
-                        {
-                            TextBlockMemoryUsed.Text = "오류";
-                        }
-                        else
-                        {
-                            TextBlockMemoryFree.Text = "오류";
-                        }
-                    }
-                    else
-                    {
+                        string stringValue = itemArray[i].GetValueString("value");
                         if (i == 0)
                         {
                             TextBlockMemoryTotal.Text = stringValue;
@@ -1038,20 +1046,20 @@ namespace TorusWPF
                             TextBlockMemoryFree.Text = stringValue;
                         }
                     }
-                }
-                else
-                {
-                    if (i == 0)
-                    {
-                        TextBlockMemoryTotal.Text = "오류";
-                    }
-                    else if (i == 1)
-                    {
-                        TextBlockMemoryUsed.Text = "오류";
-                    }
                     else
                     {
-                        TextBlockMemoryFree.Text = "오류";
+                        if (i == 0)
+                        {
+                            TextBlockMemoryTotal.Text = "오류";
+                        }
+                        else if (i == 1)
+                        {
+                            TextBlockMemoryUsed.Text = "오류";
+                        }
+                        else
+                        {
+                            TextBlockMemoryFree.Text = "오류";
+                        }
                     }
                 }
             }
@@ -1786,6 +1794,10 @@ namespace TorusWPF
                 else if (cncVendorCode_ == 6)
                 {
                     tmpStr = cncVendorCode_.ToString() + " (MAZAK)";
+                }
+                else if (cncVendorCode_ == 7)
+                {
+                    tmpStr = cncVendorCode_.ToString() + " (Heidenhain)";
                 }
                 else
                 {
@@ -2604,7 +2616,5 @@ namespace TorusWPF
         {
             System.Windows.MessageBox.Show("Test");
         }
-
-
     }
 }

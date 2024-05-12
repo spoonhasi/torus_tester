@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TorusWPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.2.1" Height="920" Width="1810">
+        Title="TorusTester C# v2.2.2" Height="920" Width="1810">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="750"></ColumnDefinition>
@@ -46,7 +46,7 @@
                     <TextBox x:Name="TextBoxCommonFilter" HorizontalAlignment="Left" Margin="400,60,0,0" Text="machine=0" TextWrapping="Wrap" VerticalAlignment="Top" Width="140"/>
                     <ComboBox x:Name="ComboBoxPeriod" HorizontalAlignment="Left" Margin="550,60,0,0" VerticalAlignment="Top" Width="180" Height="20" SelectionChanged="ComboBoxPeriod_SelectionChanged"/>
                     <TextBlock HorizontalAlignment="Left" Margin="343,82,0,0" Text="타임아웃" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                    <TextBox x:Name="TextBoxTimeout" HorizontalAlignment="Left" Margin="400,81,0,0" Text="10000" TextAlignment="Right" TextWrapping="Wrap" VerticalAlignment="Top" Width="50"/>
+                    <TextBox x:Name="TextBoxTimeout" HorizontalAlignment="Left" Margin="400,81,0,0" Text="10000" TextAlignment="Right" TextWrapping="NoWrap" VerticalAlignment="Top" Width="50"/>
                     <TextBlock HorizontalAlignment="Left" Margin="454,82,0,0" Text="ms" TextWrapping="Wrap" VerticalAlignment="Top"/>
                     <Grid Width="390" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="340,80,0,0">
                         <TextBlock x:Name="TextBlockSon" HorizontalAlignment="Right" Margin="0,2,35,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
