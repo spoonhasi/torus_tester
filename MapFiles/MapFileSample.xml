@@ -1,0 +1,26 @@
+<DataMaps>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="1" DataAddress="101" Machine_ID="1" VendorCode="KCNC" TargetDataType="0" TargetAddress="PA1431" Description="KCNC-TEST01"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="2" DataAddress="102" Machine_ID="1" VendorCode="KCNC" TargetDataType="0" TargetAddress="PA1431" Description="KCNC-TEST02"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="3" DataAddress="103" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST03" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="4" DataAddress="104" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST04" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="5" DataAddress="105" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST05" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="6" DataAddress="106" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST06" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="7" DataAddress="107" Machine_ID="1" VendorCode="KCNC" TargetDataType="1" TargetAddress="PA1431" Description="KCNC-TEST07"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="8" DataAddress="108" Machine_ID="1" VendorCode="KCNC" TargetDataType="1" TargetAddress="PA1431" Description="KCNC-TEST08"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="9" DataAddress="109" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST09"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="10" DataAddress="110" Machine_ID="1" VendorCode="KCNC" TargetDataType="2" TargetAddress="PA1431" Description="KCNC-TEST10"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="1" DataAddress="1101" Machine_ID="2" VendorCode="FANUC" TargetDataType="2" TargetAddress="D100-D103" Description="FANUC-TEST01" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="2" DataAddress="1102" Machine_ID="2" VendorCode="FANUC" TargetDataType="2" TargetAddress="D100-D103" Description="FANUC-TEST02" />
+  <InternalPlcData Memory_ID="1" MemoryBlockType="3" DataAddress="1103" Machine_ID="2" VendorCode="FANUC" TargetDataType="0" TargetAddress="D100" Description="FANUC-TEST03"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="4" DataAddress="1104" Machine_ID="2" VendorCode="FANUC" TargetDataType="0" TargetAddress="D100" Description="FANUC-TEST04"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="5" DataAddress="1105" Machine_ID="2" VendorCode="FANUC" TargetDataType="1" TargetAddress="D100-D101" Description="FANUC-TEST05"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="6" DataAddress="1106" Machine_ID="2" VendorCode="FANUC" TargetDataType="1" TargetAddress="D100-D101" Description="FANUC-TEST06"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="7" DataAddress="1107" Machine_ID="2" VendorCode="FANUC" TargetDataType="2" TargetAddress="D100-D103" Description="FANUC-TEST07"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="7" DataAddress="1117" Machine_ID="2" VendorCode="FANUC" TargetDataType="4" TargetAddress="D100-D103" Description="FANUC-TEST07"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="8" DataAddress="1108" Machine_ID="2" VendorCode="FANUC" TargetDataType="2" TargetAddress="D100-D103" Description="FANUC-TEST08"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="8" DataAddress="1118" Machine_ID="2" VendorCode="FANUC" TargetDataType="4" TargetAddress="D100-D103" Description="FANUC-TEST08"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="9" DataAddress="1109" Machine_ID="2" VendorCode="FANUC" TargetDataType="5" TargetAddress="D100-D107" Description="FANUC-TEST09"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="10" DataAddress="1110" Machine_ID="2" VendorCode="FANUC" TargetDataType="5" TargetAddress="D100-D107" Description="FANUC-TEST10"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="3" DataAddress="11" Machine_ID="3" VendorCode="Fanuc" TargetDataType="0" TargetAddress="E8000" Description="EADDRESS"/>
+  <InternalPlcData Memory_ID="1" MemoryBlockType="4" DataAddress="12" Machine_ID="3" VendorCode="Fanuc" TargetDataType="0" TargetAddress="E8000" Description="EADDRESS"/>
+</DataMaps>

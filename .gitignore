@@ -3,7 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-/MachineStateModelList/
+# User-specific files (TorusTester)
+/CommonDataModels/*
+!/CommonDataModels/MachineDataModelSample.txt
+!/CommonDataModels/MachineDataModelTimeseries.txt
+/MapFiles/*
+!/MapFiles/MapFileSample.xml
 
 # User-specific files
 *.rsuser

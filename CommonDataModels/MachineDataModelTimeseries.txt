@@ -1,0 +1,16 @@
+data://machine/buffer/statusOfStream	buffer=1	상태 (0:설정 가능, 1:샘플링 준비, 2:수집대기, 3: 수집중, 4:수집대기 혹은 수집중, 5:수집 종료, -1:연결 실패, -2:설정값 적용 실패) (기본값 0)
+data://machine/buffer/bufferEnabled	buffer=1	
+data://machine/buffer/numberOfStream	buffer=1	
+data://machine/buffer/modOfStream	buffer=1	0으로 설정 시 무한반복 수집, 1은 1회 수집후 종료
+data://machine/buffer/machineChannelOfStream	buffer=1	(Fanuc 전용)
+data://machine/buffer/periodOfStream	buffer=1	5000으로 설정시 1회 수집에 5초 소요 (단위 ms, 최대값 10000 – 10초)
+data://machine/buffer/triggerOfStream	buffer=1	0으로 설정시 Start와 함께 바로 수집 시작 (기본값: 0)
+data://machine/buffer/stream/streamEnabled	buffer=1&stream=1-8	true로 된 stream에서만 수집 (stream 1만 true가 기본값, 나머지 2~8은 false가 기본값)
+data://machine/buffer/stream/streamFrequency	buffer=1&stream=1	Hz 설정 (기본값: 1000)
+data://machine/buffer/stream/streamEnabled	buffer=1&stream=1	
+data://machine/buffer/stream/streamCategory	buffer=1&stream=1	KCNC는 1부터 12까지 사용
+data://machine/buffer/stream/streamSubcategory	buffer=1&stream=1	KCNC의 상태정보의 숫자 참조
+data://machine/buffer/stream/streamType	buffer=1&stream=1	(KCNC 전용) (0:Bit, 1:Resistor) (기본값은 1)
+data://machine/buffer/stream/streamStartBit	buffer=1&stream=1	(KCNC 전용) (Type이 0:Bit일때 사용하는 설정)
+data://machine/buffer/stream/streamEndBit	buffer=1&stream=1	(KCNC 전용) (Type이 0:Bit일때 사용하는 설정)
+data://machine/buffer/stream/value	buffer=1&stream=1	

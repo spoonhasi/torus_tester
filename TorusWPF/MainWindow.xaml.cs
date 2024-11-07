@@ -6,19 +6,19 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Threading;
 using System.Windows.Threading;
-
 using IntelligentApiCS;
-using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using Newtonsoft.Json.Linq;
 using static IntelligentApiCS.Api;
-using System.ComponentModel.DataAnnotations;
-using System.Reflection.PortableExecutable;
-using System.Windows.Markup;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using Microsoft.Win32;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Xml.Linq;
+using System.Collections.ObjectModel;
+using System.Reflection.PortableExecutable;
+using Microsoft.VisualBasic;
+using System.Windows.Input;
 
 namespace TorusWPF
 {
@@ -30,22 +30,109 @@ namespace TorusWPF
         public const string ConfigFileName = "config.ini";
     }
 
+    public class NCmachine
+    {
+        public bool activate { get; set; } = false;
+        public string name { get; set; } = "";
+        public int id { get; set; } = 0;
+        public string vendorCode { get; set; } = "";
+        public string address { get; set; } = "";
+        public int port { get; set; } = 0;
+        public string exDllPath { get; set; } = "";
+        public string connectCode { get; set; } = "";
+        public string ncVersionCode { get; set; } = "";
+        public string toolSystem { get; set; } = "";
+        public string username { get; set; } = "";
+        public string password { get; set; } = "";
+    }
+
+    public class MachineObject
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("id")]
+        public int ID { get; set; }
+
+        [JsonPropertyName("vendorCode")]
+        public string VendorCode { get; set; }
+
+        [JsonPropertyName("connectCode")]
+        public string ConnectCode { get; set; }
+
+        [JsonPropertyName("ip_address")]
+        public string Address { get; set; }
+
+        //[JsonPropertyName("toolSystem")]
+        //public int ToolSystem { get; set; }
+    }
+    public class MachinesObject
+    {
+        [JsonPropertyName("value")]
+        public List<MachineObject> Value { get; set; }
+    }
+    public class FileObject
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+        [JsonPropertyName("path")]
+        public string Path { get; set; }
+
+        [JsonPropertyName("size")]
+        public int Size { get; set; }
+
+        [JsonPropertyName("datetime")]
+        public string Datetime { get; set; }
+
+        [JsonPropertyName("isDir")]
+        public bool IsDir { get; set; }
+    }
+    public class FilesObject
+    {
+        [JsonPropertyName("value")]
+        public List<FileObject> Value { get; set; }
+    }
+
+    public class ItemObject
+    {
+        [JsonPropertyName("value")]
+        public List<JsonElement> Value { get; set; }
+
+        [JsonPropertyName("status")]
+        public int Status { get; set; }
+
+        [JsonPropertyName("datatype")]
+        public string DataType { get; set; }
+
+        [JsonPropertyName("time")]
+        public string Timestamp { get; set; }
+
+        [JsonPropertyName("address")]
+        public string Address { get; set; }
+
+        [JsonPropertyName("filter")]
+        public string Filter { get; set; }
+    }
+
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : System.Windows.Window
     {
-        [DllImport("kernel32")]
+        [DllImport("kernel32", CharSet = CharSet.Unicode)]
+#pragma warning disable SYSLIB1054 // 컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
+#pragma warning restore SYSLIB1054 // 컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.
 
-        [DllImport("kernel32")]
+        [DllImport("kernel32", CharSet = CharSet.Unicode)]
         private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
 
         //설정 불러오기용 함수
         public static string ReadConfig(string _settingFileName, string _section, string _key, string _defaultValue = "")
         {
-            StringBuilder temp = new StringBuilder(255);
-            GetPrivateProfileString(_section, _key, null, temp, 255, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _settingFileName));
+            StringBuilder temp = new(255);
+            _ = GetPrivateProfileString(_section, _key, null, temp, 255, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _settingFileName));
             if (temp.ToString() == "")
             {
                 WriteConfig(_settingFileName, _section, _key, _defaultValue);
@@ -59,6 +146,7 @@ namespace TorusWPF
             WritePrivateProfileString(_section, _key, _contents, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _settingFileName));
         }
 
+        private List<MachineObject> connectedMachineList_ = [];
         private int connectResult_;
         private int cncVendorCode_;
         private Thread threadSingle_;
@@ -70,13 +158,16 @@ namespace TorusWPF
         private string addressFilePath_;
         private bool direct_;
         private int timeout_;
+        private bool isTimeSeriesCallbackRegistered_;
+        private ObservableCollection<NCmachine> ncMachineList_ { get; set; } = [];
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.2.0의 API로 제작되었습니다.
-
+            // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.3.0의 API로 제작되었습니다.
+            ListViewMachineList.ItemsSource = ncMachineList_;
+            isTimeSeriesCallbackRegistered_ = false;
             connectResult_ = -1;
             cncVendorCode_ = 0;
             SignalCopyOrMove_ = 0; // 0은 초기화, 1은 복사, 2는 이동
@@ -84,6 +175,8 @@ namespace TorusWPF
             ButtonSingleStop.IsEnabled = false;
             ButtonMultiStart.IsEnabled = false;
             ButtonMultiStop.IsEnabled = false;
+            ButtonMachineMonitoringStart.IsEnabled = false;
+            ButtonMachineMonitoringStop.IsEnabled = false;
             TextBlockSon.Text = "0";
             TextBlockMom.Text = "0";
             TextBlockGetDataSon.Text = "0";
@@ -95,14 +188,17 @@ namespace TorusWPF
             TextBlockTotalMom.Text = "0";
             TextBlockTotalPercent.Text = "%";
             TextBlockAddressFilePath.Text = "";
-            TextBoxTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "Timeout", "10000");
+            TextBoxTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "Timeout", "100000");
             addressFilePath_ = "";
             TextBlockMemoryTotal.Text = "";
             TextBlockMemoryUsed.Text = "";
             TextBlockMemoryFree.Text = "";
             ComboBoxPeriod.Items.Add("직접통신=True(직접통신)");
             ComboBoxPeriod.Items.Add("직접통신=False(주기통신)");
-            ComboBoxPeriod.SelectedIndex = Convert.ToInt32(ReadConfig(Constants.ConfigFileName, "Main", "periodicity", "0"));
+            ComboBoxPeriod.SelectedIndex = Convert.ToInt32(ReadConfig(Constants.ConfigFileName, "Main", "Periodicity", "0"));
+            TextBoxTorusRunPath.Text = ReadConfig(Constants.ConfigFileName, "Main", "TorusRunPath", "");
+            TextBoxTorusExitPath.Text = ReadConfig(Constants.ConfigFileName, "Main", "TorusExitPath", "");
+            TextBoxTorusMachineListPath.Text = ReadConfig(Constants.ConfigFileName, "Main", "TorusMachineListPath", "");
             if (ComboBoxPeriod.SelectedIndex == 0)
             {
                 direct_ = true;
@@ -113,7 +209,7 @@ namespace TorusWPF
             }
             SetTimeout();
             //MachineStateModelSample.txt에 모든 MachineStateModel이 예시로 기록되어 있습니다. filter만 바꿔서 사용하면 됩니다.
-            string lastMachineStateModelFilePath = ReadConfig(Constants.ConfigFileName, "Main", "lastMachineStateModelFilePath");
+            string lastMachineStateModelFilePath = ReadConfig(Constants.ConfigFileName, "Main", "LastMachineStateModelFilePath");
             if (lastMachineStateModelFilePath == "" || File.Exists(lastMachineStateModelFilePath) == false)
             {
                 string defaultMachineStateModelFilePath = "../../../MachineStateModelSample.txt";
@@ -132,7 +228,7 @@ namespace TorusWPF
             threadMultistopFlag_ = true;
             threadMulti_?.Join();
         }
-        public int GetMachineId(string _id_name)
+        public static int GetMachineId(string _id_name)
         {
             int index = _id_name.IndexOf(':');
             if (index == -1)
@@ -141,7 +237,7 @@ namespace TorusWPF
             }
             else
             {
-                string id = _id_name.Substring(0, index);
+                string id = _id_name[..index];
                 return Convert.ToInt32(id);
             }
         }
@@ -192,6 +288,8 @@ namespace TorusWPF
             ListBoxMachineMission.Items.Add(new MissionItem("getExModal"));
             ListBoxMachineMission.Items.Add(new MissionItem("getGUD"));
             ListBoxMachineMission.Items.Add(new MissionItem("setGUD"));
+            ListBoxMachineMission.Items.Add(new MissionItem("startTimeSeries"));
+            ListBoxMachineMission.Items.Add(new MissionItem("endTimeSeries"));
         }
 
         private void CalTotal()
@@ -258,46 +356,92 @@ namespace TorusWPF
             TextBlockMissionSon.Text = tmpGoodCount.ToString();
             CalTotal();
         }
-        //Json 형식으로 변환 하는 함수입니다.
-        JObject GetJObject(Item _item)
-        {
-            string itemString = _item.ToString().Replace("\r\n", "");
-            JObject json = JObject.Parse(itemString);
-            return json;
-        }
+
         // TORUS에 연결 하는 함수입니다.
         private void ButtonConnect_Click(object sender, RoutedEventArgs e)
+        {
+            Connect();
+        }
+        private void ButtonConnectWith_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.OpenFileDialog openFileDialog = new()
+            {
+                InitialDirectory = ReadConfig(Constants.ConfigFileName, "Main", "LoadMapFileDirPath"),
+                Filter = "xml files (*.xml)|*.xml"
+            };
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string directoryPath = Path.GetDirectoryName(openFileDialog.FileName);
+                WriteConfig(Constants.ConfigFileName, "Main", "LoadMapFileDirPath", directoryPath);
+                Connect(openFileDialog.FileName);
+            }
+        }
+
+        private void Connect(string mapFilePath = "")
         {
             if (connectResult_ != 0)
             {
                 // "TorusTester.info"에 기록된 "App ID"와 "App Name"을 사용합니다.
-                connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName);
+                try
+                {
+                    if (mapFilePath == "")
+                    {
+                        connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName);
+                    }
+                    else
+                    {
+                        //connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName, mapFilePath);
+
+                        string fileName = Path.GetFileName(mapFilePath);
+                        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                        string destFilePath = Path.Combine(appDirectory, fileName);// 대상 파일 경로를 설정 (복사할 파일 이름을 유지)
+                        try
+                        {
+                            // 소스 파일이 이미 애플리케이션 폴더에 있는지 확인
+                            if (Path.GetFullPath(mapFilePath).Equals(Path.GetFullPath(destFilePath), StringComparison.OrdinalIgnoreCase))
+                            {
+                                Debug.WriteLine("소스 파일이 이미 애플리케이션 폴더에 있습니다. 복사를 건너뜁니다.");
+                            }
+                            else
+                            {
+                                File.Copy(mapFilePath, destFilePath, true); // 덮어쓰기 옵션 true
+                                Debug.WriteLine("파일이 성공적으로 복사되었습니다.");
+                            }
+                            connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName, fileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"오류 발생: {ex.Message}");
+                        }
+                    }
+                }
+                catch (System.DllNotFoundException ex)
+                {
+                    System.Windows.MessageBox.Show(ex.Message, "오류");
+                    return;
+                }
             }
             if (connectResult_ == 0)
             {
+                connectedMachineList_.Clear();
                 ComboBoxMachieID.Items.Clear();
                 bool first = true;
-                Item item;
-                int result = Api.getMachinesInfo(out item);
-                if (result == 0 && item != null)
+                int result = Api.getMachinesInfo(out Item item);
+                if (result == 0)
                 {
-                    JObject json = GetJObject(item);
-                    JArray values = (JArray)json["value"];
-                    for (int i = 0; i < values.Count; i++)
+                    MachinesObject machinesObject = JsonSerializer.Deserialize<MachinesObject>(item.ToString());
+                    connectedMachineList_ = [.. machinesObject.Value.OrderBy(item => item.ID)];
+                    foreach (var machine in connectedMachineList_)
                     {
-                        ComboBoxMachieID.Items.Add(values[i]["id"] + ":" + values[i]["name"]);
+                        ComboBoxMachieID.Items.Add(machine.ID + ":" + machine.Name);
                         if (first)
                         {
                             first = false;
-                            TextBoxCommonFilter.Text = "machine=" + values[i]["id"].ToString();
+                            TextBoxCommonFilter.Text = "machine=" + machine.ID;
                         }
                     }
-                    ButtonConnect.IsEnabled = false;
-                    ButtonSingleStart.IsEnabled = true;
-                    ButtonSingleStop.IsEnabled = false;
-                    ButtonMultiStart.IsEnabled = true;
-                    ButtonMultiStop.IsEnabled = false;
                     ComboBoxMachieID.SelectedIndex = 0;
+                    MakeMachineMonitoringList();
                 }
                 else
                 {
@@ -307,13 +451,34 @@ namespace TorusWPF
             }
             else if (connectResult_ == 546308133)
             {
-                System.Windows.MessageBox.Show("TORUS 구동에 필요한 DLL 파일을 찾을 수 없거나 TORUS가 실행중이 아닙니다.", "오류");
+                System.Windows.MessageBox.Show("TORUS 구동에 필요한 DLL 파일을 찾을 수 없거나 TORUS가 실행중이 아닙니다.\n오류코드: " + connectResult_, "오류");
+            }
+            else if (connectResult_ == 548405285)
+            {
+                System.Windows.MessageBox.Show("오류코드: " + connectResult_, "오류");
+            }
+            else if (connectResult_ == 548405249)
+            {
+                System.Windows.MessageBox.Show("오류코드: " + connectResult_, "오류");
             }
             else
             {
                 System.Windows.MessageBox.Show("알 수 없는 오류 : " + connectResult_.ToString(), "오류");
             }
+
+            if (connectResult_ == 0)
+            {
+                ButtonConnect.IsEnabled = false;
+                ButtonConnectWith.IsEnabled = false;
+                ButtonSingleStart.IsEnabled = true;
+                ButtonSingleStop.IsEnabled = false;
+                ButtonMultiStart.IsEnabled = true;
+                ButtonMultiStop.IsEnabled = false;
+                ButtonMachineMonitoringStart.IsEnabled = true;
+                ButtonMachineMonitoringStop.IsEnabled = false;
+            }
         }
+
         // MachineStateModel을 불러오는 함수입니다.
         private void LoadMachineStateModel(string _filePath)
         {
@@ -336,13 +501,13 @@ namespace TorusWPF
                     {
                         if (items[1] != "")
                         {
-                            if (items[1].Substring(items[1].Length - 1) == "&")
+                            if (items[1][^1..] == "&")//Substring(items[1].Length - 1)
                             {
-                                items[1] = items[1].Substring(0, items[1].Length - 1);
+                                items[1] = items[1][..^1];
                             }
-                            if (items[1].Substring(0, 1) == "&")
+                            if (items[1][..1] == "&")//Substring(0, 1)
                             {
-                                items[1] = items[1].Substring(1, items[1].Length - 1);
+                                items[1] = items[1][1..];
                             }
                         }
                     }
@@ -369,19 +534,32 @@ namespace TorusWPF
             TextBlockMissionSon.Text = "0";
             TextBlockMom.Text = ListBoxMachineState.Items.Count.ToString();
             AddForTest(MachineState.totalCount);
-            WriteConfig(Constants.ConfigFileName, "Main", "lastMachineStateModelFilePath", _filePath);
+            WriteConfig(Constants.ConfigFileName, "Main", "LastMachineStateModelFilePath", _filePath);
         }
 
 
         private void ButtonLoad_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.OpenFileDialog openFileDialog = new();
-            openFileDialog.InitialDirectory = ReadConfig(Constants.ConfigFileName, "Main", "LoadListFileDefaultDirPath");
-            openFileDialog.Filter = "txt files (*.txt)|*.txt";
+            System.Windows.Forms.OpenFileDialog openFileDialog = new()
+            {
+                InitialDirectory = ReadConfig(Constants.ConfigFileName, "Main", "LoadListFileDefaultDirPath"),
+                Filter = "txt files (*.txt)|*.txt"
+            };
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 LoadMachineStateModel(openFileDialog.FileName);
             }
+        }
+
+        private void ButtonNew_Click(object sender, RoutedEventArgs e)
+        {
+            ListBoxMachineState.Items.Clear();
+            MachineState.totalCount = 0;
+            TextBlockAddressFilePath.Text = "";
+            addressFilePath_ = "";
+            TextBlockMissionSon.Text = "0";
+            TextBlockMom.Text = "0";
+            AddForTest(MachineState.totalCount);
         }
 
         private void ButtonSingleStart_Click(object sender, RoutedEventArgs e)
@@ -403,9 +581,9 @@ namespace TorusWPF
             {
                 if (commonFilter_.Substring(commonFilter_.Length - 1, 1) == "&")
                 {
-                    commonFilter_ = commonFilter_.Substring(0, commonFilter_.Length - 1);
+                    commonFilter_ = commonFilter_[..^1]; //Substring(0, commonFilter_.Length - 1)
                 }
-                if (commonFilter_.Substring(0, 1) == "&")
+                if (commonFilter_[..1] == "&")
                 {
                     commonFilter_ = commonFilter_.Substring(1, commonFilter_.Length);
                 }
@@ -521,7 +699,7 @@ namespace TorusWPF
                         }));
                         tmpErrCount++;
                     }
-                    tmpOneTurnTime = tmpOneTurnTime + stopwatch.ElapsedMilliseconds;
+                    tmpOneTurnTime += stopwatch.ElapsedMilliseconds;
                     if (threadSignlestopFlag_)
                     {
                         break;
@@ -538,7 +716,7 @@ namespace TorusWPF
                 }
                 if (tmpCountCheck)
                 {
-                    tmpTotalTime = tmpTotalTime + tmpOneTurnTime;
+                    tmpTotalTime += tmpOneTurnTime;
                     tmpGetDataCurrentCount++;
                     _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                     {
@@ -556,7 +734,7 @@ namespace TorusWPF
                     {
                         _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                         {
-                            TextBoxThreadPeriodResult.Text = tmpOneTurnTime.ToString() + "ms\n" + TextBoxThreadPeriodResult.Text.Substring(0, TextBoxThreadPeriodResult.Text.LastIndexOf('\n'));
+                            TextBoxThreadPeriodResult.Text = tmpOneTurnTime.ToString() + "ms\n" + TextBoxThreadPeriodResult.Text[..TextBoxThreadPeriodResult.Text.LastIndexOf('\n')];
                         }));
                     }
                     else
@@ -603,19 +781,22 @@ namespace TorusWPF
             string tmpcommonFilter = TextBoxCommonFilter.Text.Trim();
             string tmpAddress = (ListBoxMachineState.Items[_index] as MachineState).address;
             string tmpFilter = (ListBoxMachineState.Items[_index] as MachineState).filter;
-            if (tmpcommonFilter != "")
+            if (tmpAddress.StartsWith("data://machine/"))
             {
-                if (tmpFilter != "")
+                if (tmpcommonFilter != "")
                 {
-                    tmpFilter = tmpcommonFilter + "&" + tmpFilter;
-                }
-                else
-                {
-                    tmpFilter = tmpcommonFilter;
+                    if (tmpFilter != "")
+                    {
+                        tmpFilter = tmpcommonFilter + "&" + tmpFilter;
+                    }
+                    else
+                    {
+                        tmpFilter = tmpcommonFilter;
+                    }
                 }
             }
             stopwatch.Restart();
-            int tmpResult = Api.getData(tmpAddress, tmpFilter, out Item item, true, timeout_);
+            int tmpResult = Api.getData(tmpAddress, tmpFilter, out Item item, true, timeout_);//하나만 실행
             stopwatch.Stop();
             if (tmpResult == 0)
             {
@@ -626,8 +807,7 @@ namespace TorusWPF
             }
             else
             {
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 (ListBoxMachineState.Items[_index] as MachineState).InsertResult(tmpErrorCode);
                 (ListBoxMachineState.Items[_index] as MachineState).InsertResultDescribe(tmpErrorMessage);
                 (ListBoxMachineState.Items[_index] as MachineState).DrawColorMan(30, 255, 100, 100);
@@ -649,8 +829,11 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
             }
+            if (!inputData.Contains('[') && !inputData.Contains(']'))
+            {
+                inputData = "{\"value\":[" + inputData + "]}";
+            }
             Item InItem;
-            Item OutItem;
             string tmpAddress = (ListBoxMachineState.Items[_index] as MachineState).address;
             string tmpFilter = (ListBoxMachineState.Items[_index] as MachineState).filter;
             string tmpcommonFilter = TextBoxCommonFilter.Text.Trim();
@@ -671,19 +854,20 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("잘못된 형식입니다.", "오류");
                 return;
             }
-            int tmpResult = Api.updateData(tmpAddress, tmpFilter, InItem, out OutItem, timeout_);
+
+            int tmpResult = Api.updateData(tmpAddress, tmpFilter, InItem, out _, timeout_);
             if (tmpResult == 0)
             {
                 System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
             }
             else
             {
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
-        string MakeErrorMessage(int _errCode, out string _errCodeString, string _errCode16Str = "")
+
+        static string MakeErrorMessage(int _errCode, out string _errCodeString, string _errCode16Str = "")
         {
             string result;
             if (_errCode16Str == "")
@@ -864,16 +1048,15 @@ namespace TorusWPF
             {
                 _errCodeString = "알려진 에러코드가 아닙니다.";
             }
-            return result;
+            return result + " (" + _errCode + ")";
         }
 
         private string MakeObjectInfo(string _fullPath, int _machinID, out bool _isDir)
         {
             string totalInfo = "";
-            Item item;
             int result;
             _isDir = false;
-            result = Api.getAttributeExists(_fullPath, out item, _machinID, timeout_);
+            result = Api.getAttributeExists(_fullPath, out Item item, _machinID, timeout_);
             if (result == 0)
             {
                 bool value = item.GetValueBoolean("value");
@@ -910,7 +1093,7 @@ namespace TorusWPF
                     // 해당 값이 2이면 같은 이름의 폴더와 파일이 같은 폴더내에 있다는 의미입니다. 그러나 경로명으로 구분이 가능합니다.
                     // Fanuc의 경우 동일한 이름의 폴더와 파일이 같은 경로에 존재할 수 있습니다. 
                     // getFileList와 getFileListEx는 항목이 폴더인 경우에는 경로 끝에 '/'를 표시합니다. 이것을 이용해 폴더와 파일을 구분할 수 있습니다.
-                    if (_fullPath.Substring(_fullPath .Length - 1) == "/")
+                    if (_fullPath[^1..] == "/")// == _fullPath.Substring(_fullPath.Length - 1)
                     {
                         totalInfo += "DIR|";
                         _isDir = true;
@@ -999,7 +1182,7 @@ namespace TorusWPF
             }
             else
             {
-                totalInfo = totalInfo + "time:ERROR|";
+                totalInfo += "time:ERROR|";
                 CheckForTest("getAttributeEditedTime", false);
             }
             return totalInfo;
@@ -1080,20 +1263,18 @@ namespace TorusWPF
                     CheckForTest("getFileListEx", true);
                     if (item != null)
                     {
-                        //string[] fileInfos = item.GetArrayString("value");//TODO
-                        JObject json = GetJObject(item);
-                        JArray values = (JArray)json["value"];
-                        for (int i = 0; i < values.Count; i++)
+                        FilesObject filesObject = JsonSerializer.Deserialize<FilesObject>(item.ToString());
+                        List<FileObject> FileList = [.. filesObject.Value.OrderByDescending(file => file.IsDir).ThenBy(file => file.Name)];
+                        foreach (FileObject file in FileList)
                         {
-                            string name = values[i]["name"].ToString();
-                            bool isDir = false;
-                            if (values[i]["isDir"].ToString().ToLower() == "true")
+                            if (DateTime.TryParse(file.Datetime, out DateTime datetime))
                             {
-                                isDir = true;
+                                ListBoxFileList.Items.Add(new FileItem(file.Name, "size:" + file.Size + ", time:" + datetime.ToString("yyyy-MM-ddTHH:mm:ss"), file.IsDir));
                             }
-                            string size = values[i]["size"].ToString();
-                            string datetime = values[i]["datetime"].ToString();
-                            ListBoxFileList.Items.Add(new FileItem(name, "size:" + size + ", time:" + datetime, isDir));
+                            else
+                            {
+                                ListBoxFileList.Items.Add(new FileItem(file.Name, "size:" + file.Size + ", time:" + file.Datetime, file.IsDir));
+                            }
                         }
                     }
                 }
@@ -1118,8 +1299,7 @@ namespace TorusWPF
                             string tmpOneItem = tmpFileList[i];
                             if (tmpOneItem != "")
                             {
-                                bool tmpIsDir;
-                                string tmpTotalInfo = MakeObjectInfo(tmpCurrentPath + tmpOneItem, tmpMachineID, out tmpIsDir);
+                                string tmpTotalInfo = MakeObjectInfo(tmpCurrentPath + tmpOneItem, tmpMachineID, out bool tmpIsDir);
                                 ListBoxFileList.Items.Add(new FileItem(tmpOneItem, tmpTotalInfo, tmpIsDir));
                             }
                         }
@@ -1128,8 +1308,7 @@ namespace TorusWPF
                 else
                 {
                     CheckForTest("getFileList", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("파일 리스트 조회 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
@@ -1146,8 +1325,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CreateCNCFile(tmpCurrentPath, tmpNewObjectName, out item, tmpMachineID, timeout_);
+            int result = Api.CreateCNCFile(tmpCurrentPath, tmpNewObjectName, out _, tmpMachineID, timeout_);
             if (result == 0)
             {
                 CheckForTest("CreateCNCFile", true);
@@ -1157,8 +1335,7 @@ namespace TorusWPF
             else
             {
                 CheckForTest("CreateCNCFile", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("파일 생성 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
@@ -1174,8 +1351,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CreateCNCFolder(tmpCurrentPath, tmpNewObjectName, out item, tmpMachineID, timeout_);
+            int result = Api.CreateCNCFolder(tmpCurrentPath, tmpNewObjectName, out _, tmpMachineID, timeout_);
             if (result == 0)
             {
                 CheckForTest("CreateCNCFolder", true);
@@ -1185,8 +1361,7 @@ namespace TorusWPF
             else
             {
                 CheckForTest("CreateCNCFolder", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("폴더 생성 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
@@ -1466,7 +1641,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            int result = Api.UploadFile(tmpUploadFile, tmpCurrentPath , tmpMachineID, tmpChannel, timeout_);
+            int result = Api.UploadFile(tmpUploadFile, tmpCurrentPath, tmpMachineID, tmpChannel, timeout_);
             if (result == 0)
             {
                 CheckForTest("uploadFile", true);
@@ -1517,7 +1692,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("다운로드 폴더 경로를 확인하시기 바랍니다.");
                     return;
                 }
-                if (localPath.Substring(localPath .Length - 1) != "/" && localPath.Substring(localPath.Length - 1) != "\\")
+                if (localPath.Substring(localPath.Length - 1) != "/" && localPath.Substring(localPath.Length - 1) != "\\")
                 {
                     if (localPath.Contains('\\'))
                     {
@@ -2175,10 +2350,21 @@ namespace TorusWPF
 
         public string MakeSuccessMessage(Item _item)
         {
-            string type = _item.GetValueString("datatype");
-            string timestatmp = _item.GetValueString("time");
             string address = _item.GetValueString("address");
             string filter = _item.GetValueString("filter");
+            string timestatmp = "";
+            string type = "";
+            int status = 0;
+            if (address.StartsWith("data://device"))
+            {
+
+            }
+            else if (address.StartsWith("data://machine"))
+            {
+                timestatmp = _item.GetValueString("time");
+                type = _item.GetValueString("datatype");
+                status = _item.GetValueInt("status");
+            }
             string[] values;
             if (type == "boolean")
             {
@@ -2188,7 +2374,6 @@ namespace TorusWPF
             {
                 values = _item.GetArrayString("value");
             }
-            int status = _item.GetValueInt("status");
             if (address == "data://machine/machinepowerontime")//분단위
             {
                 for (int i = 0; i < values.Length; i++)
@@ -2257,7 +2442,7 @@ namespace TorusWPF
 
         private void ComboBoxPeriod_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            WriteConfig(Constants.ConfigFileName, "Main", "periodicity", ComboBoxPeriod.SelectedIndex.ToString());
+            WriteConfig(Constants.ConfigFileName, "Main", "Periodicity", ComboBoxPeriod.SelectedIndex.ToString());
             if (ComboBoxPeriod.SelectedIndex == 0)
             {
                 direct_ = true;
@@ -2615,6 +2800,696 @@ namespace TorusWPF
         private void ButtonEtc_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.MessageBox.Show("Test");
+        }
+
+        private void ButtonTimeseriesStart_Click(object sender, RoutedEventArgs e)
+        {
+            int bufferIndex = 1;
+            int tmpMachineID = 1;
+            if (ComboBoxMachieID.SelectedItem != null)
+            {
+                tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
+                {
+                    if (cncVendorCode_ != 1 && cncVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    {
+                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
+                        return;
+                    }
+                }
+            }
+            if (isTimeSeriesCallbackRegistered_ == false)
+            {
+                Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실핼하는 동안 딱 한번만 등록하면 됩니다.
+                isTimeSeriesCallbackRegistered_ = true;
+            }
+            SetTimeout();
+            int tmpResult = Api.startTimeSeries(bufferIndex, tmpMachineID, timeout_);
+            if (tmpResult == 0)
+            {
+                CheckForTest("startTimeSeries", true);
+                TextBlockTimeseries.Text = "Api.startTimeSeries 성공";
+            }
+            else
+            {
+                CheckForTest("startTimeSeries", false);
+                TextBlockTimeseries.Text = "Api.startTimeSeries 실패";
+            }
+        }
+
+        private void ButtonTimeseriesStop_Click(object sender, RoutedEventArgs e)
+        {
+            int bufferIndex = 1;
+            int tmpMachineID = 1;
+            if (ComboBoxMachieID.SelectedItem != null)
+            {
+                tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
+                {
+                    if (cncVendorCode_ != 1 && cncVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    {
+                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
+                        return;
+                    }
+                }
+            }
+            SetTimeout();
+            int tmpResult = Api.endTimeSeries(bufferIndex, tmpMachineID, timeout_);
+            if (tmpResult == 0)
+            {
+                CheckForTest("endTimeSeries", true);
+                TextBlockTimeseries.Text = "Api.endTimeSeries 성공";
+            }
+            else
+            {
+                CheckForTest("endTimeSeries", false);
+                TextBlockTimeseries.Text = "Api.endTimeSeries 실패";
+            }
+        }
+
+        private void ButtonTimeseriesLastBuffer_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private int OnTimeseriesBufferData(EVENT_CODE evt, int cmd, Item command, ref Item result)
+        {
+            Item data = command.find("result");
+            List<Item> tempData = (List<Item>)data.GetValue();
+            Item tmpItem = tempData[0];
+            double[] dvals = tmpItem.GetArrayDouble("value");
+            double[] dataX = Enumerable.Range(1, dvals.Length).Select(x => (double)x).ToArray();
+            double[] dataY = dvals.Take(dvals.Length).Select(x => (double)x).ToArray();
+            ScootPlotTimeseries.Plot.Clear();
+            ScootPlotTimeseries.Plot.Add.Scatter(dataX, dataY);
+            ScootPlotTimeseries.Plot.Axes.AutoScale();
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                TextBlockTimeseries.Text = tmpItem.GetValueString("time");
+                ScootPlotTimeseries.Refresh();
+            });
+            Debug.WriteLine("OnTimeseriesBufferData BufferCount: " + dvals.Length);
+            Debug.WriteLine("OnTimeseriesBufferData Start1 Value: " + dvals[0]);
+            Debug.WriteLine("OnTimeseriesBufferData Start2 Value: " + dvals[1]);
+            Debug.WriteLine("OnTimeseriesBufferData Start3 Value: " + dvals[2]);
+            Debug.WriteLine("OnTimeseriesBufferData Start4 Value: " + dvals[3]);
+            Debug.WriteLine("OnTimeseriesBufferData Start5 Value: " + dvals[4]);
+            Debug.WriteLine("OnTimeseriesBufferData End-5 Value: " + dvals[dvals.Length - 5]);
+            Debug.WriteLine("OnTimeseriesBufferData End-4 Value: " + dvals[dvals.Length - 4]);
+            Debug.WriteLine("OnTimeseriesBufferData End-3 Value: " + dvals[dvals.Length - 3]);
+            Debug.WriteLine("OnTimeseriesBufferData End-2 Value: " + dvals[dvals.Length - 2]);
+            Debug.WriteLine("OnTimeseriesBufferData End-1 Value: " + dvals[dvals.Length - 1]);
+            return 0;
+        }
+
+        public static void RunProcess(string filePath)
+        {
+            if (System.IO.File.Exists(filePath))
+            {
+                // ProcessStartInfo 설정
+                ProcessStartInfo processStartInfo = new()
+                {
+                    FileName = filePath, // 실행할 배치 파일
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(filePath), // 배치 파일이 있는 폴더
+                    UseShellExecute = true // Windows 셸을 사용하여 실행
+                };
+                // Process 실행
+                using Process process = new();
+                process.StartInfo = processStartInfo;
+                process.Start();
+                process.WaitForExit(); // 프로세스가 종료될 때까지 기다림
+            }
+            else
+            {
+                MessageBox.Show("실행 파일을 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private bool FileSelector(string oldPath, out string newPath)
+        {
+            OpenFileDialog openFileDialog = new()
+            {
+                Title = "파일 열기",
+                Filter = "모든 파일 (*.*)|*.*",
+            };
+            if (oldPath != "")
+            {
+                string absolutePath = System.IO.Path.GetFullPath(oldPath);
+                string dirPath = System.IO.Path.GetDirectoryName(absolutePath);
+                if (dirPath != null)
+                {
+                    openFileDialog.InitialDirectory = dirPath;
+                }
+            }
+            if (openFileDialog.ShowDialog() == true)
+            {
+                newPath = openFileDialog.FileName;
+                return true;
+            }
+            newPath = "";
+            return false;
+        }
+
+        private void MachineListXmlRead(string filePath)
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                MessageBox.Show("MachineList.xml 파일을 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!filePath.EndsWith("MachineList.xml"))
+            {
+                MessageBox.Show("파일 이름이 \"MachineList.xml\"이어야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            ncMachineList_.Clear();
+            XDocument doc = XDocument.Load(filePath);
+            if (doc.Root.Name.ToString().Equals("machinelist", StringComparison.InvariantCultureIgnoreCase))
+            {
+                foreach (var element in doc.Root.Elements())
+                {
+                    if (element.Name.ToString().Equals("ncmachine", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        bool isPass = false;
+                        NCmachine ncMachine = new();
+                        foreach (var attribute in element.Attributes())
+                        {
+                            string attributeName = attribute.Name.ToString().ToLowerInvariant();
+                            string attributeValue = attribute.Value.ToString();
+                            if (attributeName == "activate")
+                            {
+                                if (attributeValue.ToLowerInvariant() == "true")
+                                {
+                                    ncMachine.activate = true;
+                                }
+                                else
+                                {
+                                    ncMachine.activate = false;
+                                }
+                            }
+                            else if (attributeName == "name")
+                            {
+                                ncMachine.name = attributeValue;
+                            }
+                            else if (attributeName == "id")
+                            {
+                                if (int.TryParse(attributeValue, out int id))
+                                {
+                                    ncMachine.id = id;
+                                }
+                                else
+                                {
+                                    isPass = true;
+                                    break;
+                                }
+                            }
+                            else if (attributeName == "vendorcode")
+                            {
+                                ncMachine.vendorCode = attributeValue;
+                            }
+                            else if (attributeName == "address")
+                            {
+                                ncMachine.address = attributeValue;
+                            }
+                            else if (attributeName == "port")
+                            {
+                                if (int.TryParse(attributeValue, out int port))
+                                {
+                                    ncMachine.port = port;
+                                }
+                                else
+                                {
+                                    isPass = true;
+                                    break;
+                                }
+                            }
+                            else if (attributeName == "exdllpath")
+                            {
+                                ncMachine.exDllPath = attributeValue;
+                            }
+                            else if (attributeName == "connectcode")
+                            {
+                                ncMachine.connectCode = attributeValue;
+                            }
+                            else if (attributeName == "ncversioncode")
+                            {
+                                ncMachine.ncVersionCode = attributeValue;
+                            }
+                            else if (attributeName == "toolsystem")
+                            {
+                                ncMachine.toolSystem = attributeValue;
+                            }
+                            else if (attributeName == "username")
+                            {
+                                ncMachine.username = attributeValue;
+                            }
+                            else if (attributeName == "password")
+                            {
+                                ncMachine.password = attributeValue;
+                            }
+                        }
+                        if (isPass)
+                        {
+                            continue;
+                        }
+                        ncMachineList_.Add(ncMachine);
+                    }
+                }
+            }
+            ClearMachineListItem();
+            ListViewMachineList.Items.Refresh();
+        }
+
+        private void MachineListXmlWrite(string filePath)
+        {
+            if (!System.IO.File.Exists(filePath))
+            {
+                MessageBox.Show("MachineList.xml 파일을 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!filePath.EndsWith("MachineList.xml"))
+            {
+                MessageBox.Show("파일 이름이 \"MachineList.xml\"이어야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            var activeIds = ncMachineList_
+                .Where(m => m.activate)
+                .Select(m => m.id)
+                .ToList();
+
+            var duplicateId = activeIds
+                .GroupBy(id => id)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .FirstOrDefault();
+
+            if (duplicateId != 0)
+            {
+                MessageBox.Show($"Activate가 true인 설비 목록 중에 중복된 id({duplicateId})가 발견되었습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            XElement rootElement = new XElement("MachineList");
+            foreach (var ncMachine in ncMachineList_)
+            {
+                XElement machineElement = new XElement("NCmachine",
+                    new XAttribute("activate", ncMachine.activate.ToString().ToLowerInvariant()),
+                    new XAttribute("name", ncMachine.name),
+                    new XAttribute("id", ncMachine.id),
+                    new XAttribute("vendorCode", ncMachine.vendorCode),
+                    new XAttribute("address", ncMachine.address),
+                    new XAttribute("port", ncMachine.port),
+                    new XAttribute("exDllPath", ncMachine.exDllPath),
+                    new XAttribute("connectCode", ncMachine.connectCode),
+                    new XAttribute("ncVersionCode", ncMachine.ncVersionCode),
+                    new XAttribute("toolSystem", ncMachine.toolSystem),
+                    new XAttribute("username", ncMachine.username),
+                    new XAttribute("password", ncMachine.password)
+                );
+                rootElement.Add(machineElement);
+            }
+            XDocument doc = new(rootElement);
+            doc.Save(filePath);
+            MessageBox.Show("MachineList.xml 파일을 변경하였습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void SearchItem()
+        {
+            string targetText = TextBoxSearch.Text.ToLowerInvariant();
+            if (targetText.Trim() == "")
+            {
+                TextBlockSearchResult.Text = "검색 결과:";
+                return;
+            }
+            List<int> targetIndexList = [];
+            for (int i = 0; i < ListBoxMachineState.Items.Count; i++)
+            {
+                if (ListBoxMachineState.Items[i] is MachineState item)
+                {
+                    if (item.AddressLower().Contains(targetText))
+                    {
+                        targetIndexList.Add(i + 1);
+                    }
+                }
+            }
+            if (targetIndexList.Count > 0)
+            {
+                TextBlockSearchResult.Text = "검색 결과: " + string.Join(", ", targetIndexList) + "번 입니다.";
+                int targetIndex = targetIndexList[0] - 1;
+                ListBoxMachineState.SelectedIndex = targetIndex;
+                ListBoxMachineState.ScrollIntoView(ListBoxMachineState.Items[targetIndex]);
+            }
+            else
+            {
+                TextBlockSearchResult.Text = "검색 결과: 해당 Address를 찾을 수 없습니다.";
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender == ButtonSearch)
+            {
+                SearchItem();
+            }
+            else if (sender == ButtonTorusRunPath)
+            {
+                if (FileSelector(TextBoxTorusRunPath.Text, out string newPath))
+                {
+                    WriteConfig(Constants.ConfigFileName, "Main", "TorusRunPath", newPath);
+                    TextBoxTorusRunPath.Text = newPath;
+                }
+            }
+            else if (sender == ButtonTorusExitPath)
+            {
+                if (FileSelector(TextBoxTorusExitPath.Text, out string newPath))
+                {
+                    WriteConfig(Constants.ConfigFileName, "Main", "TorusExitPath", newPath);
+                    TextBoxTorusExitPath.Text = newPath;
+                }
+            }
+            else if (sender == ButtonTorusMachineListPath)
+            {
+                if (FileSelector(TextBoxTorusMachineListPath.Text, out string newPath))
+                {
+                    WriteConfig(Constants.ConfigFileName, "Main", "TorusMachineListPath", newPath);
+                    TextBoxTorusMachineListPath.Text = newPath;
+                }
+            }
+            else if (sender == ButtonTorusRunExecute)
+            {
+                RunProcess(TextBoxTorusRunPath.Text);
+            }
+            else if (sender == ButtonTorusExitExecute)
+            {
+                RunProcess(TextBoxTorusExitPath.Text);
+            }
+            else if (sender == ButtonTorusMachineListRead)
+            {
+                MachineListXmlRead(TextBoxTorusMachineListPath.Text);
+            }
+            else if (sender == ButtonTorusMachineListWrite)
+            {
+                MachineListXmlWrite(TextBoxTorusMachineListPath.Text);
+            }
+            else if (sender == ButtonTorusMachineListItemSave)
+            {
+                SaveMachineListItem();
+            }
+            else if (sender == ButtonTorusMachineListItemCancel)
+            {
+                CancelMachineListItem();
+            }
+            else if (sender == ButtonTorusMachineListItemAdd)
+            {
+                AddMachineListItem();
+            }
+            else if (sender == ButtonTorusMachineListItemRemove)
+            {
+                RemoveMachineListItem();
+            }
+            else if (sender == ButtonTorusMachineListArrange)
+            {
+                ArrangeMachineListItem();
+            }
+            else if (sender == ButtonMachineMonitoringStart)
+            {
+                bool isAllExit = true;
+                foreach (var item in ListBoxMachineMonitoringList.Items)
+                {
+                    if (item is MachineMonitoringItem monitoring)
+                    {
+                        if (!monitoring.IsExit())
+                        {
+                            isAllExit = false;
+                        }
+                    }
+                }
+                if (!isAllExit)
+                {
+                    return;
+                }
+                foreach (var item in ListBoxMachineMonitoringList.Items)
+                {
+                    if (item is MachineMonitoringItem monitoring)
+                    {
+                        monitoring.OnOff(true);
+                    }
+                }
+                ButtonMachineMonitoringStart.IsEnabled = false;
+                ButtonMachineMonitoringStop.IsEnabled = true;
+            }
+            else if (sender == ButtonMachineMonitoringStop)
+            {
+                ButtonMachineMonitoringStop.IsEnabled = false;
+                foreach (var item in ListBoxMachineMonitoringList.Items)
+                {
+                    if (item is MachineMonitoringItem monitoring)
+                    {
+                        monitoring.OnOff(false);
+                    }
+                }
+                while (true)
+                {
+                    bool isAllExit = true;
+                    foreach (var item in ListBoxMachineMonitoringList.Items)
+                    {
+                        if (item is MachineMonitoringItem monitoring)
+                        {
+                            if (!monitoring.IsExit())
+                            {
+                                isAllExit = false;
+                            }
+                        }
+                    }
+                    if (isAllExit)
+                    {
+                        break;
+                    }
+                }
+                ButtonMachineMonitoringStart.IsEnabled = true;
+            }
+        }
+
+        private void ArrangeMachineListItem()
+        {
+            var selectedItem = ListViewMachineList.SelectedItem as NCmachine;
+            var sortedList = new ObservableCollection<NCmachine>(ncMachineList_.OrderBy(x => x.id));
+            ncMachineList_ = sortedList;
+            ListViewMachineList.ItemsSource = ncMachineList_;
+            ListViewMachineList.Items.Refresh();
+        }
+
+        private void AddMachineListItem()
+        {
+            NCmachine machine = new();
+            machine.name = "Machine";
+            machine.id = 1;
+            machine.vendorCode = "Kcnc";
+            machine.connectCode = "Default";
+            machine.ncVersionCode = "Default";
+            machine.toolSystem = "Default";
+            ncMachineList_.Add(machine);
+            ListViewMachineList.Items.Refresh();
+            ListViewMachineList.SelectedItem = machine;
+            ListViewMachineList.ScrollIntoView(machine);
+        }
+
+        private void RemoveMachineListItem()
+        {
+            if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+            {
+                return;
+            }
+            ncMachineList_.Remove(ncMachine);
+            ListViewMachineList.Items.Refresh();
+            ClearMachineListItem();
+        }
+
+        private void SaveMachineListItem()
+        {
+            if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+            {
+                return;
+            }
+            if (TextBoxTorusNcMachineName.Text.Trim() == "")
+            {
+                MessageBox.Show("name은 비어있을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!int.TryParse(TextBoxTorusNcMachineId.Text, out int id) || id < 1)
+            {
+                MessageBox.Show("id는 1 이상의 정수여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!int.TryParse(TextBoxTorusNcMachinePort.Text, out int port) || id < 0 || id > 65535)
+            {
+                MessageBox.Show("port는 0 이상, 65535 이하의 정수여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            string activate = ((ComboBoxItem)ComboBoxTorusNcMachineActivate.SelectedItem)?.Content.ToString().ToLowerInvariant();
+            if (activate == "true")
+            {
+                ncMachine.activate = true;
+            }
+            else
+            {
+                ncMachine.activate = false;
+            }
+            ncMachine.name = TextBoxTorusNcMachineName.Text.Trim();
+            ncMachine.id = id;
+            ncMachine.vendorCode = ((ComboBoxItem)ComboBoxTorusNcMachineVendorCode.SelectedItem)?.Content.ToString();
+            ncMachine.address = TextBoxTorusNcMachineAddress.Text.Trim();
+            ncMachine.port = port;
+            ncMachine.exDllPath = TextBoxTorusNcMachineExDllPath.Text.Trim();
+            ncMachine.connectCode = ((ComboBoxItem)ComboBoxTorusNcMachineConnectCode.SelectedItem)?.Content.ToString();
+            ncMachine.ncVersionCode = ((ComboBoxItem)ComboBoxTorusNcMachineNcVersionCode.SelectedItem)?.Content.ToString();
+            ncMachine.toolSystem = ((ComboBoxItem)ComboBoxTorusNcMachineToolSystem.SelectedItem)?.Content.ToString();
+            ncMachine.username = TextBoxTorusNcMachineUsername.Text.Trim();
+            ncMachine.password = TextBoxTorusNcMachinePassword.Text.Trim();
+            ListViewMachineList.Items.Refresh();
+        }
+
+        private void LoadMachineListItem()
+        {
+            if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+            {
+                return;
+            }
+            string targetValue = ncMachine.activate.ToString();
+            foreach (ComboBoxItem item in ComboBoxTorusNcMachineActivate.Items)
+            {
+                if (string.Equals(item.Content.ToString(), targetValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComboBoxTorusNcMachineActivate.SelectedItem = item;
+                    break;
+                }
+            }
+            targetValue = ncMachine.name;
+            TextBoxTorusNcMachineName.Text = targetValue;
+            targetValue = ncMachine.id.ToString();
+            TextBoxTorusNcMachineId.Text = targetValue;
+            targetValue = ncMachine.vendorCode;
+            foreach (ComboBoxItem item in ComboBoxTorusNcMachineVendorCode.Items)
+            {
+                if (string.Equals(item.Content.ToString(), targetValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComboBoxTorusNcMachineVendorCode.SelectedItem = item;
+                    break;
+                }
+            }
+            targetValue = ncMachine.address;
+            TextBoxTorusNcMachineAddress.Text = targetValue;
+            targetValue = ncMachine.port.ToString();
+            TextBoxTorusNcMachinePort.Text = targetValue;
+            targetValue = ncMachine.exDllPath;
+            TextBoxTorusNcMachineExDllPath.Text = targetValue;
+            targetValue = ncMachine.connectCode;
+            if (targetValue.Trim() == "")
+            {
+                targetValue = "Default";
+            }
+            foreach (ComboBoxItem item in ComboBoxTorusNcMachineConnectCode.Items)
+            {
+                if (string.Equals(item.Content.ToString(), targetValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComboBoxTorusNcMachineConnectCode.SelectedItem = item;
+                    break;
+                }
+            }
+            targetValue = ncMachine.ncVersionCode;
+            if (targetValue.Trim() == "")
+            {
+                targetValue = "Default";
+            }
+            foreach (ComboBoxItem item in ComboBoxTorusNcMachineNcVersionCode.Items)
+            {
+                if (string.Equals(item.Content.ToString(), targetValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComboBoxTorusNcMachineNcVersionCode.SelectedItem = item;
+                    break;
+                }
+            }
+            targetValue = ncMachine.toolSystem;
+            if (targetValue.Trim() == "")
+            {
+                targetValue = "Default";
+            }
+            foreach (ComboBoxItem item in ComboBoxTorusNcMachineToolSystem.Items)
+            {
+                if (string.Equals(item.Content.ToString(), targetValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComboBoxTorusNcMachineToolSystem.SelectedItem = item;
+                    break;
+                }
+            }
+            targetValue = ncMachine.username;
+            TextBoxTorusNcMachineUsername.Text = targetValue;
+            targetValue = ncMachine.password;
+            TextBoxTorusNcMachinePassword.Text = targetValue;
+        }
+
+        private void CancelMachineListItem()
+        {
+            if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+            {
+                ClearMachineListItem();
+            }
+            else
+            {
+                LoadMachineListItem();
+            }
+        }
+
+        private void ClearMachineListItem()
+        {
+            ComboBoxTorusNcMachineActivate.SelectedIndex = 1;
+            TextBoxTorusNcMachineName.Text = "";
+            TextBoxTorusNcMachineId.Text = "";
+            ComboBoxTorusNcMachineVendorCode.SelectedIndex = 4;
+            TextBoxTorusNcMachineAddress.Text = "";
+            TextBoxTorusNcMachinePort.Text = "";
+            TextBoxTorusNcMachineExDllPath.Text = "";
+            ComboBoxTorusNcMachineConnectCode.SelectedIndex = 0;
+            ComboBoxTorusNcMachineNcVersionCode.SelectedIndex = 0;
+            ComboBoxTorusNcMachineToolSystem.SelectedIndex = 0;
+            TextBoxTorusNcMachineUsername.Text = "";
+            TextBoxTorusNcMachinePassword.Text = "";
+        }
+
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender == ListViewMachineList)
+            {
+                if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+                {
+                    ClearMachineListItem();
+                }
+                else
+                {
+                    LoadMachineListItem();
+                }
+            }
+        }
+
+        private void MakeMachineMonitoringList()
+        {
+            ListBoxMachineMonitoringList.Items.Clear();
+            foreach (MachineObject machine in connectedMachineList_)
+            {
+                ListBoxMachineMonitoringList.Items.Add(new MachineMonitoringItem(machine));
+            }
+        }
+
+        private void TextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (sender == TextBoxSearch)
+            {
+                if (e.Key == Key.Enter)
+                {
+                    // 엔터 키가 눌렸을 때 실행할 동작
+                    SearchItem();
+                    // 기본 엔터 동작을 방지하려면 아래 코드로 이벤트 처리 완료
+                    e.Handled = true;
+                }
+            }
         }
     }
 }

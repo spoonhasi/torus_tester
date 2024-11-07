@@ -14,7 +14,7 @@
             <Button x:Name="ButtonChangeAddress" Content="ChangeAddress" HorizontalAlignment="Left" Margin="100,5,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeAddress_Click"/>
             <Button x:Name="ButtonChangeFilter" Content="ChangeFilter" HorizontalAlignment="Left" Margin="100,25,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeFilter_Click"/>
             <Button x:Name="ButtonOneGetData" Content="GetData" HorizontalAlignment="Left" Margin="100,45,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonOneGetData_Click"/>
-            <Button x:Name="ButtonUpdate" Content="Update" HorizontalAlignment="Left" Margin="100,65,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonUpdate_Click"/>
+            <Button x:Name="ButtonUpdate" Content="UpdateData" HorizontalAlignment="Left" Margin="100,65,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonUpdate_Click"/>
             <Button x:Name="ButtonDelete" Content="X" HorizontalAlignment="Right" Margin="0,5,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDelete_Click"/>
             <Button x:Name="ButtonUp" Content="Up" HorizontalAlignment="Right" Margin="0,45,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonUp_Click"/>
             <Button x:Name="ButtonDown" Content="Down" HorizontalAlignment="Right" Margin="0,65,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDown_Click"/>

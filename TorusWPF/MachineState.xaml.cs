@@ -50,6 +50,12 @@ namespace TorusWPF
             TextBoxResult.IsReadOnly = true;
             TextBoxResultDescribe.IsReadOnly = true;
         }
+
+        public string AddressLower()
+        {
+            return address.ToLowerInvariant();
+        }
+
         public void InsertTime(string _contents)
         {
             if(timeLineCount >= 5)
