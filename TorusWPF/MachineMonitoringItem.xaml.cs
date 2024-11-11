@@ -145,6 +145,7 @@ namespace TorusWPF
             double lastSpindle = 0;
             double lastFeedOverride = 0;
             double lastSpindleOverride = 0;
+            int lastActiveToolNumber = 0;
             while (MonitoringRunFlag)
             {
                 ItemObject axisWorkPostionsItemObject = null;
@@ -157,6 +158,7 @@ namespace TorusWPF
                 double spindle = 0;
                 double feedOverride = 0;
                 double spindleOverride = 0;
+                int activeToolNumber = 0;
                 result = Api.getData("data://machine/channel/axis/workPosition", "machine=" + machineObject.ID + "&channel=1&axis=1-" + axisCount, out Item axisWorkPostionsItem, false);
                 if (result == 0 && axisWorkPostionsItem != null)
                 {
@@ -258,6 +260,16 @@ namespace TorusWPF
                 {
                     isPerpect = false;
                 }
+                result = Api.getData("data://machine/channel/activeTool/toolNumber", "machine=" + machineObject.ID + "&channel=1", out Item activeToolNumberItem, false);
+                if (result == 0 && activeToolNumberItem != null)
+                {
+                    ItemObject activeToolNumberItemObject = JsonSerializer.Deserialize<ItemObject>(activeToolNumberItem.ToString());
+                    activeToolNumber = activeToolNumberItemObject.Value[0].GetInt32();
+                }
+                else
+                {
+                    isPerpect = false;
+                }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     if (axisWorkPostionsItemObject != null)
@@ -315,6 +327,11 @@ namespace TorusWPF
                     {
                         TextBlockMachineFeedOverride.Text = feedOverride.ToString("F0");
                         lastFeedOverride = feedOverride;
+                    }
+                    if (lastActiveToolNumber != activeToolNumber)
+                    {
+                        TextBlockMachineActiveToolNumber.Text = activeToolNumber.ToString();
+                        lastActiveToolNumber = activeToolNumber;
                     }
                 });
                 _ = BlinkStatus(isPerpect);
