@@ -10,7 +10,13 @@ Torus_Tester는 TORUS를 테스트할 용도로 만들어졌습니다.
 
 ## Updates
 ---
-v.2.3.0
+v2.3.2
+- 모니터링 탭의 화면 표시 개선
+
+v2.3.1
+- CurrentFile 파일명 표기 관련 임시조치
+
+v2.3.0
 - 모니터링 테스트 탭 추가
 - Torus 설정 탭 추가
 - getData, updateData 항목 검색 기능 추가

@@ -42,7 +42,7 @@
                 <Grid Grid.Row="1">
                     <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Top" Margin="15,5,0,0">
                         <TextBlock Text="MAIN:" FontWeight="Bold" Width="70" FontSize="20" VerticalAlignment="Center"/>
-                        <Viewbox Grid.Column="0" VerticalAlignment="Center" Width="200" Height="25" HorizontalAlignment="Left">
+                        <Viewbox Grid.Column="0" VerticalAlignment="Center" Width="180" Margin="0,0,20,0" Height="25" HorizontalAlignment="Left">
                             <TextBlock x:Name="TextBlockMachineMain" Text="-" FontWeight="Bold" VerticalAlignment="Center"/>
                         </Viewbox>
                         <TextBlock Text="F:" FontWeight="Bold" Width="25" FontSize="20" VerticalAlignment="Center"/>
@@ -59,7 +59,7 @@
                 <Grid Grid.Row="2">
                     <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Top" Margin="15,5,0,0">
                         <TextBlock Text="SUB:" FontWeight="Bold" Width="70" FontSize="20" VerticalAlignment="Center"/>
-                        <Viewbox Grid.Column="0" VerticalAlignment="Center" Width="200" Height="25" HorizontalAlignment="Left">
+                        <Viewbox Grid.Column="0" VerticalAlignment="Center" Width="180" Margin="0,0,20,0" Height="25" HorizontalAlignment="Left">
                             <TextBlock x:Name="TextBlockMachineSub" Text="-" FontWeight="Bold" VerticalAlignment="Center"/>
                         </Viewbox>
                         <TextBlock Text="S:" FontWeight="Bold" Width="25" FontSize="20" VerticalAlignment="Center"/>
