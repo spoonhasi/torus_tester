@@ -1,6 +1,6 @@
 {
 	"App Name": "TorusTester",
-	"Version": "2.3.0",
+	"Version": "2.3.3",
 	"App ID": "FAFC456B-FA41-40AD-B1EB-C3834076A1DC",
 	"App File": "$(PlatformDir)/TorusWPF.exe"
 }

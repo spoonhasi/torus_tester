@@ -10,6 +10,9 @@ Torus_Tester는 TORUS를 테스트할 용도로 만들어졌습니다.
 
 ## Updates
 ---
+v2.3.3
+- MainFile 파일명 표기 관련 임시조치
+
 v2.3.2
 - 모니터링 탭의 화면 표시 개선
 

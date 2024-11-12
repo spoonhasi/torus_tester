@@ -6,6 +6,7 @@
 # User-specific files (TorusTester)
 /CommonDataModels/*
 !/CommonDataModels/MachineDataModelSample.txt
+!/CommonDataModels/MachineDataModelSampleWithoutRegisterTools.txt
 !/CommonDataModels/MachineDataModelTimeseries.txt
 /MapFiles/*
 !/MapFiles/MapFileSample.xml

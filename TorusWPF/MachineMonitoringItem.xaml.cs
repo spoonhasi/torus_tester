@@ -196,13 +196,13 @@ namespace TorusWPF
                     ItemObject mainProgramItemObject = JsonSerializer.Deserialize<ItemObject>(mainProgramItem.ToString());
                     mainProgram = mainProgramItemObject.Value[0].ToString();
                     //TODO 버그대처용 임시코드
-                    int firstDotIndex = currentProgram.IndexOf('.');
+                    int firstDotIndex = mainProgram.IndexOf('.');
                     if (firstDotIndex != -1)
                     {
-                        int secondDotIndex = currentProgram.IndexOf('.', firstDotIndex + 1);
+                        int secondDotIndex = mainProgram.IndexOf('.', firstDotIndex + 1);
                         if (secondDotIndex != -1)
                         {
-                            currentProgram = currentProgram.Substring(0, secondDotIndex);
+                            mainProgram = mainProgram.Substring(0, secondDotIndex);
                         }
                     }
                 }
