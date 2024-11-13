@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TorusWPF"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="200" d:DesignWidth="1000">
     <Grid Height="200" Width="1000" Background="White">
         <Border BorderBrush="Black" BorderThickness="2"/>
@@ -74,6 +74,9 @@
                     <TextBlock Text="SPINDLE OVERRIDE" FontSize="7" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,5,0"/>
                 </Grid>
                 <Grid Grid.Row="3">
+                    <Grid x:Name="GridNcState" Height="30" Width="210" HorizontalAlignment="Left" Margin="15,0,0,0">
+                        <TextBlock x:Name="TextBlockNcState" Text="Reset" FontSize="20" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Grid>
                     <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Top" Margin="285,5,0,0">
                         <TextBlock Text="T:" FontWeight="Bold" Width="25" FontSize="20" VerticalAlignment="Center"/>
                         <Grid Width="105">

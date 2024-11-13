@@ -146,6 +146,8 @@ namespace TorusWPF
             double lastFeedOverride = 0;
             double lastSpindleOverride = 0;
             int lastActiveToolNumber = 0;
+            int lastNcState = 0;
+            int lastAlarmState = 0;
             while (MonitoringRunFlag)
             {
                 ItemObject axisWorkPostionsItemObject = null;
@@ -159,6 +161,8 @@ namespace TorusWPF
                 double feedOverride = 0;
                 double spindleOverride = 0;
                 int activeToolNumber = 0;
+                int ncState = 0;
+                int alarmState = 0;
                 result = Api.getData("data://machine/channel/axis/workPosition", "machine=" + machineObject.ID + "&channel=1&axis=1-" + axisCount, out Item axisWorkPostionsItem, false);
                 if (result == 0 && axisWorkPostionsItem != null)
                 {
@@ -280,6 +284,26 @@ namespace TorusWPF
                 {
                     isPerpect = false;
                 }
+                result = Api.getData("data://machine/channel/ncState", "machine=" + machineObject.ID + "&channel=1", out Item ncStateItem, false);
+                if (result == 0 && ncStateItem != null)
+                {
+                    ItemObject ncStateItemObject = JsonSerializer.Deserialize<ItemObject>(ncStateItem.ToString());
+                    ncState = ncStateItemObject.Value[0].GetInt32();
+                }
+                else
+                {
+                    isPerpect = false;
+                }
+                result = Api.getData("data://machine/channel/alarmStatus", "machine=" + machineObject.ID + "&channel=1", out Item alarmStateItem, false);
+                if (result == 0 && alarmStateItem != null)
+                {
+                    ItemObject alarmStateItemObject = JsonSerializer.Deserialize<ItemObject>(alarmStateItem.ToString());
+                    alarmState = alarmStateItemObject.Value[0].GetInt32();
+                }
+                else
+                {
+                    isPerpect = false;
+                }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     if (axisWorkPostionsItemObject != null)
@@ -342,6 +366,59 @@ namespace TorusWPF
                     {
                         TextBlockMachineActiveToolNumber.Text = activeToolNumber.ToString();
                         lastActiveToolNumber = activeToolNumber;
+                    }
+                    if (lastAlarmState != alarmState || lastNcState != ncState)
+                    {
+                        if (alarmState == 1)
+                        {
+                            GridNcState.Background = Brushes.Red;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "Alarm";
+                        }
+                        else if (ncState == 0)
+                        {
+                            GridNcState.Background = Brushes.LightBlue;
+                            TextBlockNcState.Foreground = Brushes.Black;
+                            TextBlockNcState.Text = "Reset";
+                        }
+                        else if (ncState == 1)
+                        {
+                            GridNcState.Background = Brushes.Yellow;
+                            TextBlockNcState.Foreground = Brushes.Black;
+                            TextBlockNcState.Text = "Stop";
+                        }
+                        else if (ncState == 2)
+                        {
+                            GridNcState.Background = Brushes.DarkOrange;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "Hold";
+                        }
+                        else if (ncState == 3)
+                        {
+                            GridNcState.Background = Brushes.Green;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "Run";
+                        }
+                        else if (ncState == 4)
+                        {
+                            GridNcState.Background = Brushes.Purple;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "MSTR";
+                        }
+                        else if (ncState == 5)
+                        {
+                            GridNcState.Background = Brushes.Chocolate;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "Interrupted";
+                        }
+                        else if (ncState == 6)
+                        {
+                            GridNcState.Background = Brushes.Red;
+                            TextBlockNcState.Foreground = Brushes.White;
+                            TextBlockNcState.Text = "Pause";
+                        }
+                        lastAlarmState = alarmState;
+                        lastNcState = ncState;
                     }
                 });
                 _ = BlinkStatus(isPerpect);
