@@ -75,7 +75,7 @@
                 </Grid>
                 <Grid Grid.Row="3">
                     <Grid x:Name="GridNcState" Height="30" Width="210" HorizontalAlignment="Left" Margin="15,0,0,0">
-                        <TextBlock x:Name="TextBlockNcState" Text="Reset" FontSize="20" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TextBlockNcState" Text="Reset" FontSize="20" Foreground="white" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </Grid>
                     <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Top" Margin="285,5,0,0">
                         <TextBlock Text="T:" FontWeight="Bold" Width="25" FontSize="20" VerticalAlignment="Center"/>

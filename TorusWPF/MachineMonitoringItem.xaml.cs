@@ -146,8 +146,8 @@ namespace TorusWPF
             double lastFeedOverride = 0;
             double lastSpindleOverride = 0;
             int lastActiveToolNumber = 0;
-            int lastNcState = 0;
-            int lastAlarmState = 0;
+            int lastNcState = -1;
+            int lastAlarmState = -1;
             while (MonitoringRunFlag)
             {
                 ItemObject axisWorkPostionsItemObject = null;
@@ -369,7 +369,7 @@ namespace TorusWPF
                     }
                     if (lastAlarmState != alarmState || lastNcState != ncState)
                     {
-                        if (alarmState == 1)
+                        if (alarmState > 0)
                         {
                             GridNcState.Background = Brushes.Red;
                             TextBlockNcState.Foreground = Brushes.White;
