@@ -2,6 +2,19 @@
 ---
 Torus_Tester는 TORUS를 테스트할 용도로 만들어졌습니다.
 
+## Libraries and Licenses
+This project uses the following open-source libraries:
+
+1. **ScottPlot**
+   - License: [MIT License](LICENSE/LICENSE_ScottPlot.txt)
+   - Copyright: (c) 2018 Scott Harden / Harden Technologies, LLC
+
+2. **Newtonsoft.Json**
+   - License: [MIT License](LICENSE/LECENSE_Newtonsoft.Json)
+   - Copyright: (c) 2007 James Newton-King
+
+For detailed license information, please refer to the [LICENSE folder](LICENSE/).
+
 ## 사용법
 ---
 - 사용하려는 TORUS의 "TORUS/Example_VS19/Api"의 내용물을 본 App의 Api폴더에 복사해야 합니다. 본 App은 TORUS v2.3.0 이상에서 제대로 동작합니다.
@@ -10,6 +23,9 @@ Torus_Tester는 TORUS를 테스트할 용도로 만들어졌습니다.
 
 ## Updates
 ---
+v2.3.6
+- 사용한 라이브러리의 라이센스 파일 추가
+
 v2.3.5
 - 모니터링 탭에서 Reset이 표시 안되는 버그 수정
 
