@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.7
+- 미구현 기능 버튼 삭제
+
 v2.3.6
 - 사용한 라이브러리의 라이센스 파일 추가
 
