@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.8
+- 시계열 데이터 수집 설정 기능 메뉴 추가
+
 v2.3.7
 - 미구현 기능 버튼 삭제
 

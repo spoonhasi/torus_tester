@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.7" Height="920" Width="1810">
+        Title="TorusTester C# v2.3.8" Height="920" Width="1810">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="750"></ColumnDefinition>
@@ -59,7 +59,7 @@
                     <Line X1="585" Y1="125" X2="585" Y2="315" StrokeThickness="2" Stroke="Black" StrokeDashArray="1"/>
                     <Line X1="585" Y1="315" X2="740" Y2="315" StrokeThickness="2" Stroke="Black" StrokeDashArray="1"/>
                     <Line X1="740" Y1="315" X2="740" Y2="450" StrokeThickness="2" Stroke="Black" StrokeDashArray="1"/>
-                    <TextBlock HorizontalAlignment="Left" Margin="10,132,0,0" Text="UserAPI/Timeseries" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="9"/>
+                    <TextBlock HorizontalAlignment="Left" Margin="10,132,0,0" Text="UserAPI" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
                     <TextBlock HorizontalAlignment="Left" Margin="90,131,0,0" Text="MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
                     <ComboBox x:Name="ComboBoxMachieID" HorizontalAlignment="Left" Margin="150,129,0,0" VerticalAlignment="Top" Width="185" Height="20" SelectionChanged="ComboBoxMachieID_SelectionChanged"/>
                     <TextBlock x:Name="TextBlockVendorCode" HorizontalAlignment="Left" Margin="343,130,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
@@ -238,15 +238,35 @@
                 <TabItem Header="Timeseries">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="100"></RowDefinition>
                             <RowDefinition Height="45"></RowDefinition>
                             <RowDefinition Height="1*"></RowDefinition>
                         </Grid.RowDefinitions>
                         <Grid Grid.Row="0">
+                            <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" Text="TimeSeries MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                            <ComboBox x:Name="ComboBoxTimeSeriesMachieID" HorizontalAlignment="Left" Margin="130,10,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeriesMachieID_SelectionChanged"/>
+                            <TextBlock x:Name="TextBlockTimeSeriesVendorCode" HorizontalAlignment="Left" Margin="310,10,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="TimeSeries Status:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                            <ComboBox x:Name="ComboBoxTimeSeriesStatus" HorizontalAlignment="Left" Margin="130,40,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="10,70,0,0" Text="TimeSeries Mode:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                            <ComboBox x:Name="ComboBoxTimeSeriesMode" HorizontalAlignment="Left" Margin="130,70,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="310,40,0,0" Text="TimeSeries Period(ms):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                            <TextBox x:Name="TextBoxTimeSeriesPeriod" HorizontalAlignment="Left" Margin="430,40,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
+                            <Button x:Name="ButtonTimeSeriesPeriod" Content="적용" HorizontalAlignment="Left" Margin="540,40,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="310,70,0,0" Text="TimeSeries Frequency(Hz):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>
+                            <ComboBox x:Name="ComboBoxTimeSeriesFrequency" HorizontalAlignment="Left" Margin="430,70,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="610,40,0,0" Text="TimeSeries Category:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                            <ComboBox x:Name="ComboBoxTimeSeriesCategory" HorizontalAlignment="Left" Margin="730,40,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
+                            <TextBlock HorizontalAlignment="Left" Margin="610,70,0,0" Text="TimeSeries SubCategory:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>
+                            <TextBox x:Name="TextBoxTimeSeriesSubCategory" HorizontalAlignment="Left" Margin="730,70,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
+                            <Button x:Name="ButtonTimeSeriesSubCategory" Content="적용" HorizontalAlignment="Left" Margin="840,70,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
+                        </Grid>
+                        <Grid Grid.Row="1">
                             <Button x:Name="ButtonTimeseriesStart" Content="Timeseries Start" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeseriesStart_Click"/>
                             <Button x:Name="ButtonTimeseriesStop" Content="Timeseries Stop" HorizontalAlignment="Left" Margin="150,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeseriesStop_Click"/>
                             <TextBlock x:Name="TextBlockTimeseries" HorizontalAlignment="Left" Margin="430,5,0,0" Text="Timeseries" TextWrapping="NoWrap" VerticalAlignment="Top" Height="30" FontSize="20"/>
                         </Grid>
-                        <Grid Grid.Row="1">
+                        <Grid Grid.Row="2">
                             <ScottPlot:WpfPlot x:Name="ScootPlotTimeseries" />
                         </Grid>
                     </Grid>
@@ -261,6 +281,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Name="ButtonMachineMonitoringStart" Content="Machine Monitroing Start" Width="180" Height="30" Margin="0,0,10,0" HorizontalAlignment="Left" Click="Button_Click"/>
                                 <Button x:Name="ButtonMachineMonitoringStop" Content="Machine Monitoring Stop" Width="180" Height="30" Margin="0,0,0,0" HorizontalAlignment="Left" Click="Button_Click"/>
+                                <TextBox x:Name="TextBoxMonitoringInterval" Margin="10,0,0,0" Height="30" Width="100" Text="10" VerticalContentAlignment="Center" FontSize="15" HorizontalContentAlignment="Right"/>
+                                <TextBlock Text="ms (갱신주기)" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="13"/>
                             </StackPanel>
                         </Grid>
                         <Grid Grid.Row="1">

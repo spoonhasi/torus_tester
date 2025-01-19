@@ -24,6 +24,7 @@ namespace TorusWPF
     /// </summary>
     public partial class MachineMonitoringItem : UserControl
     {
+        private int interval_ = 10;
         private readonly MachineObject machineObject;
         private bool _isBlinking = false;
         private volatile bool MonitoringRunFlag = false;
@@ -61,7 +62,7 @@ namespace TorusWPF
             machineAxisPositions.Add(TextBlockMachineAxis5Position);
         }
 
-        public void OnOff(bool onOff)
+        public void OnOff(bool onOff, int interval = 10)
         {
             if (onOff)
             {
@@ -69,6 +70,7 @@ namespace TorusWPF
                 {
                     return;
                 }
+                interval_ = interval;
                 MonitoringExitFlag = false;
                 MonitoringRunFlag = true;
                 Task.Run(() => MonitroingStart());
@@ -402,7 +404,7 @@ namespace TorusWPF
                     }
                 });
                 _ = BlinkStatus(isPerpect);
-                Thread.Sleep(500);
+                Thread.Sleep(interval_);
             }
             MonitoringExitFlag = true;
         }

@@ -19,6 +19,8 @@ using System.Collections.ObjectModel;
 using System.Reflection.PortableExecutable;
 using Microsoft.VisualBasic;
 using System.Windows.Input;
+using System.Net;
+using System.Reflection;
 
 namespace TorusWPF
 {
@@ -132,6 +134,7 @@ namespace TorusWPF
         private List<MachineObject> connectedMachineList_ = [];
         private int connectResult_;
         private int cncVendorCode_;
+        private int timeseriesVendorCode_;
         private Thread threadSingle_;
         private bool threadSignlestopFlag_;
         private Thread threadMulti_;
@@ -142,6 +145,7 @@ namespace TorusWPF
         private bool direct_;
         private int timeout_;
         private bool isTimeSeriesCallbackRegistered_;
+        private bool OffChanged_;
         private ObservableCollection<NCmachine> ncMachineList_ { get; set; } = [];
 
         public MainWindow()
@@ -149,9 +153,24 @@ namespace TorusWPF
             InitializeComponent();
 
             // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.3.1의 API로 제작되었습니다.
+            ButtonTimeseriesStart.IsEnabled = false;
+            ButtonTimeseriesStop.IsEnabled = false;
+
+            ComboBoxTimeSeriesMachieID.IsEnabled = false;
+            ComboBoxTimeSeriesStatus.IsEnabled = false;
+            ComboBoxTimeSeriesMode.IsEnabled = false;
+            TextBoxTimeSeriesPeriod.IsEnabled = false;
+            ButtonTimeSeriesPeriod.IsEnabled = false;
+            ComboBoxTimeSeriesFrequency.IsEnabled = false;
+            ComboBoxTimeSeriesCategory.IsEnabled = false;
+            TextBoxTimeSeriesSubCategory.IsEnabled = false;
+            ButtonTimeSeriesSubCategory.IsEnabled = false;
+
+            OffChanged_ = true;
             isTimeSeriesCallbackRegistered_ = false;
             connectResult_ = -1;
             cncVendorCode_ = 0;
+            timeseriesVendorCode_ = 0;
             SignalCopyOrMove_ = 0; // 0은 초기화, 1은 복사, 2는 이동
             ButtonSingleStart.IsEnabled = false;
             ButtonSingleStop.IsEnabled = false;
@@ -178,6 +197,7 @@ namespace TorusWPF
             ComboBoxPeriod.Items.Add("직접통신=True(직접통신)");
             ComboBoxPeriod.Items.Add("직접통신=False(주기통신)");
             ComboBoxPeriod.SelectedIndex = Convert.ToInt32(ReadConfig(Constants.ConfigFileName, "Main", "Periodicity", "0"));
+            TextBoxMonitoringInterval.Text = ReadConfig(Constants.ConfigFileName, "Main", "MonitoringInterval", "10");
             if (ComboBoxPeriod.SelectedIndex == 0)
             {
                 direct_ = true;
@@ -404,6 +424,7 @@ namespace TorusWPF
             {
                 connectedMachineList_.Clear();
                 ComboBoxMachieID.Items.Clear();
+                ComboBoxTimeSeriesMachieID.Items.Clear();
                 bool first = true;
                 int result = Api.getMachinesInfo(out Item item);
                 if (result == 0)
@@ -413,6 +434,7 @@ namespace TorusWPF
                     foreach (var machine in connectedMachineList_)
                     {
                         ComboBoxMachieID.Items.Add(machine.ID + ":" + machine.Name);
+                        ComboBoxTimeSeriesMachieID.Items.Add(machine.ID + ":" + machine.Name);
                         if (first)
                         {
                             first = false;
@@ -420,6 +442,7 @@ namespace TorusWPF
                         }
                     }
                     ComboBoxMachieID.SelectedIndex = 0;
+                    ComboBoxTimeSeriesMachieID.SelectedIndex = 0;
                     MakeMachineMonitoringList();
                 }
                 else
@@ -1979,6 +2002,58 @@ namespace TorusWPF
             TextBoxCopyOrMove.Text = "";
         }
 
+        private void ComboBoxTimeSeriesMachieID_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            SetTimeout();
+            string tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString()).ToString();
+            Item item;
+            int tmpResult = Api.getData("data://machine/cncvendor", "machine=" + tmpMachineID.ToString(), out item, true, timeout_);
+            if (tmpResult == 0)
+            {
+                timeseriesVendorCode_ = item.GetValueInt("value");
+                string tmpStr;
+                if (timeseriesVendorCode_ == 1)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (Fanuc)";
+                }
+                else if (timeseriesVendorCode_ == 2)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (Siemens)";
+                }
+                else if (timeseriesVendorCode_ == 3)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (CSCAM)";
+                }
+                else if (timeseriesVendorCode_ == 4)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (Mitsubishi)";
+                }
+                else if (timeseriesVendorCode_ == 5)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (KCNC)";
+                }
+                else if (timeseriesVendorCode_ == 6)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (MAZAK)";
+                }
+                else if (timeseriesVendorCode_ == 7)
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (Heidenhain)";
+                }
+                else
+                {
+                    tmpStr = timeseriesVendorCode_.ToString() + " (UNKNOWN)";
+                }
+                TextBlockTimeSeriesVendorCode.Text = "VendorCode : " + tmpStr;
+            }
+            else
+            {
+                timeseriesVendorCode_ = 0;
+                TextBlockTimeSeriesVendorCode.Text = "VendorCode : 0 (오류)";
+            }
+            InitTimeseries();
+        }
+
         private void ButtonGetGmodal_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
@@ -2781,69 +2856,6 @@ namespace TorusWPF
             System.Windows.MessageBox.Show("Test");
         }
 
-        private void ButtonTimeseriesStart_Click(object sender, RoutedEventArgs e)
-        {
-            int bufferIndex = 1;
-            int tmpMachineID = 1;
-            if (ComboBoxMachieID.SelectedItem != null)
-            {
-                tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-                {
-                    if (cncVendorCode_ != 1 && cncVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
-                    {
-                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
-                        return;
-                    }
-                }
-            }
-            if (isTimeSeriesCallbackRegistered_ == false)
-            {
-                Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실핼하는 동안 딱 한번만 등록하면 됩니다.
-                isTimeSeriesCallbackRegistered_ = true;
-            }
-            SetTimeout();
-            int tmpResult = Api.startTimeSeries(bufferIndex, tmpMachineID, timeout_);
-            if (tmpResult == 0)
-            {
-                CheckForTest("startTimeSeries", true);
-                TextBlockTimeseries.Text = "Api.startTimeSeries 성공";
-            }
-            else
-            {
-                CheckForTest("startTimeSeries", false);
-                TextBlockTimeseries.Text = "Api.startTimeSeries 실패";
-            }
-        }
-
-        private void ButtonTimeseriesStop_Click(object sender, RoutedEventArgs e)
-        {
-            int bufferIndex = 1;
-            int tmpMachineID = 1;
-            if (ComboBoxMachieID.SelectedItem != null)
-            {
-                tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-                {
-                    if (cncVendorCode_ != 1 && cncVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
-                    {
-                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
-                        return;
-                    }
-                }
-            }
-            SetTimeout();
-            int tmpResult = Api.endTimeSeries(bufferIndex, tmpMachineID, timeout_);
-            if (tmpResult == 0)
-            {
-                CheckForTest("endTimeSeries", true);
-                TextBlockTimeseries.Text = "Api.endTimeSeries 성공";
-            }
-            else
-            {
-                CheckForTest("endTimeSeries", false);
-                TextBlockTimeseries.Text = "Api.endTimeSeries 실패";
-            }
-        }
-
         private int OnTimeseriesBufferData(EVENT_CODE evt, int cmd, Item command, ref Item result)
         {
             Item data = command.find("result");
@@ -2853,7 +2865,8 @@ namespace TorusWPF
             double[] dataX = Enumerable.Range(1, dvals.Length).Select(x => (double)x).ToArray();
             double[] dataY = dvals.Take(dvals.Length).Select(x => (double)x).ToArray();
             ScootPlotTimeseries.Plot.Clear();
-            ScootPlotTimeseries.Plot.Add.Scatter(dataX, dataY);
+            //ScootPlotTimeseries.Plot.Add.Scatter(dataX, dataY);
+            ScootPlotTimeseries.Plot.Add.ScatterPoints(dataX, dataY);
             ScootPlotTimeseries.Plot.Axes.AutoScale();
             System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
             {
@@ -2977,15 +2990,22 @@ namespace TorusWPF
                 {
                     return;
                 }
+                if (!int.TryParse(TextBoxMonitoringInterval.Text, out int interval))
+                {
+                    System.Windows.MessageBox.Show("갱신 주기가 유효한 값이 아닙니다.", "오류");
+                    return;
+                }
+                WriteConfig(Constants.ConfigFileName, "Main", "MonitoringInterval", interval.ToString());
                 foreach (var item in ListBoxMachineMonitoringList.Items)
                 {
                     if (item is MachineMonitoringItem monitoring)
                     {
-                        monitoring.OnOff(true);
+                        monitoring.OnOff(true, interval);
                     }
                 }
                 ButtonMachineMonitoringStart.IsEnabled = false;
                 ButtonMachineMonitoringStop.IsEnabled = true;
+                TextBoxMonitoringInterval.IsEnabled = false;
             }
             else if (sender == ButtonMachineMonitoringStop)
             {
@@ -3016,6 +3036,7 @@ namespace TorusWPF
                     }
                 }
                 ButtonMachineMonitoringStart.IsEnabled = true;
+                TextBoxMonitoringInterval.IsEnabled = true;
             }
         }
 
@@ -3040,6 +3061,509 @@ namespace TorusWPF
                     e.Handled = true;
                 }
             }
+        }
+
+        private void ComboBoxTimeSeries_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (OffChanged_)
+            {
+                return;
+            }
+            SetTimeout();
+            if (sender == ComboBoxTimeSeriesStatus)
+            {
+                int targetValue = GetMachineId(ComboBoxTimeSeriesStatus.SelectedItem.ToString());
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+            else if (sender == ComboBoxTimeSeriesMode)
+            {
+                int targetValue = GetMachineId(ComboBoxTimeSeriesMode.SelectedItem.ToString());
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/modOfStream", "machine=" + tmpMachineID + "&buffer=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+            else if (sender == ComboBoxTimeSeriesFrequency)
+            {
+                int targetValue = GetMachineId(ComboBoxTimeSeriesFrequency.SelectedItem.ToString());
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/stream/streamFrequency", "machine=" + tmpMachineID + "&buffer=1&stream=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+            else if (sender == ComboBoxTimeSeriesCategory)
+            {
+                int targetValue = GetMachineId(ComboBoxTimeSeriesCategory.SelectedItem.ToString());
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/stream/streamCategory", "machine=" + tmpMachineID + "&buffer=1&stream=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+        }
+
+        private void InitTimeseries()
+        {
+            OffChanged_ = true;
+            ComboBoxTimeSeriesStatus.Items.Clear();
+            ComboBoxTimeSeriesMode.Items.Clear();
+            ComboBoxTimeSeriesFrequency.Items.Clear();
+            ComboBoxTimeSeriesCategory.Items.Clear();
+            TextBoxTimeSeriesPeriod.Text = "";
+            TextBoxTimeSeriesSubCategory.Text = "";
+            if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5)//1=Fanuc, 2=KCNC
+            {
+                ComboBoxTimeSeriesMachieID.IsEnabled = false;
+                ComboBoxTimeSeriesStatus.IsEnabled = false;
+                ComboBoxTimeSeriesMode.IsEnabled = false;
+                TextBoxTimeSeriesPeriod.IsEnabled = false;
+                ButtonTimeSeriesPeriod.IsEnabled = false;
+                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                ComboBoxTimeSeriesCategory.IsEnabled = false;
+                TextBoxTimeSeriesSubCategory.IsEnabled = false;
+                ButtonTimeSeriesSubCategory.IsEnabled = false;
+
+                ButtonTimeseriesStart.IsEnabled = false;
+                ButtonTimeseriesStop.IsEnabled = false;
+                return;
+            }
+            ComboBoxTimeSeriesStatus.Items.Add("0:설정 가능");
+            ComboBoxTimeSeriesStatus.Items.Add("1:샘플링 준비");
+            ComboBoxTimeSeriesStatus.Items.Add("2:수집대기");
+            ComboBoxTimeSeriesStatus.Items.Add("3:수집중");
+            ComboBoxTimeSeriesStatus.Items.Add("4:수집대기 혹은 수집중");
+            ComboBoxTimeSeriesStatus.Items.Add("5:수집 종료");
+            ComboBoxTimeSeriesStatus.Items.Add("-1:연결 실패");
+            ComboBoxTimeSeriesStatus.Items.Add("-2:설정값 적용 실패");
+            ComboBoxTimeSeriesMode.Items.Add("0:반복수집");
+            ComboBoxTimeSeriesMode.Items.Add("1:1회수집");
+            if (timeseriesVendorCode_ == 1)
+            {
+                ComboBoxTimeSeriesMode.Items.Add("2:반복수집(저밀도)");
+            }
+            ComboBoxTimeSeriesFrequency.Items.Add("1000:1KHz");
+            if (timeseriesVendorCode_ == 1)
+            {
+                ComboBoxTimeSeriesCategory.Items.Add("0:Axis-POSF,Spindle-CSPOS");
+                ComboBoxTimeSeriesCategory.Items.Add("1:Axis-ERR,Spindle-SPEED");
+                ComboBoxTimeSeriesCategory.Items.Add("2:Axis-VCMD,Spindle-TCMD");
+                ComboBoxTimeSeriesCategory.Items.Add("3:Axis-TCMD,Spindle-VCMD");
+                ComboBoxTimeSeriesCategory.Items.Add("4:Axis-SPEED,Spindle-ERR");
+                ComboBoxTimeSeriesCategory.Items.Add("5:Axis-DTRQ,Spindle-LMDAT");
+                ComboBoxTimeSeriesCategory.Items.Add("6:Axis-SYNC,Spindle-DTRQ");
+                ComboBoxTimeSeriesCategory.Items.Add("7:Axis-OVCLV,Spindle-INORM");
+                ComboBoxTimeSeriesCategory.Items.Add("8:Axis-IEFF,Spindle-MTTMP");
+                ComboBoxTimeSeriesCategory.Items.Add("9:Axis-VDC,Spindle-EPMTR");
+                ComboBoxTimeSeriesCategory.Items.Add("10:Axis-SFERR,Spindle-FREQ");
+                ComboBoxTimeSeriesCategory.Items.Add("11:Axis-ALGCMD,Spindle-GAIN");
+                ComboBoxTimeSeriesCategory.Items.Add("12:Axis-ALGFB,Spindle-TCMD2");
+                ComboBoxTimeSeriesCategory.Items.Add("13:Axis-IR,Spindle-PA1");
+                ComboBoxTimeSeriesCategory.Items.Add("14:Axis-IR1,Spindle-PB1");
+                ComboBoxTimeSeriesCategory.Items.Add("15:Axis-IR2,Spindle-PA2");
+                ComboBoxTimeSeriesCategory.Items.Add("16:Axis-IR3,Spindle-PB2");
+                ComboBoxTimeSeriesCategory.Items.Add("17:Axis-IR4,Spindle-VERR");
+                ComboBoxTimeSeriesCategory.Items.Add("18:Axis-IS,Spindle-SPSPD");
+                ComboBoxTimeSeriesCategory.Items.Add("19:Axis-IS1,Spindle-LMDTC");
+                ComboBoxTimeSeriesCategory.Items.Add("20:Axis-IS2,Spindle-LMMAX");
+                ComboBoxTimeSeriesCategory.Items.Add("21:Axis-IS3,Spindle-DURTM");
+                ComboBoxTimeSeriesCategory.Items.Add("22:Axis-IS4");
+                ComboBoxTimeSeriesCategory.Items.Add("23:Axis-ID");
+                ComboBoxTimeSeriesCategory.Items.Add("24:Axis-IQ");
+                ComboBoxTimeSeriesCategory.Items.Add("25:Axis-MTTMP");
+                ComboBoxTimeSeriesCategory.Items.Add("26:Axis-PCTMP");
+                ComboBoxTimeSeriesCategory.Items.Add("27:Axis-VCOUT");
+                ComboBoxTimeSeriesCategory.Items.Add("28:Axis-VCC0");
+                ComboBoxTimeSeriesCategory.Items.Add("29:Axis-BLACL");
+                ComboBoxTimeSeriesCategory.Items.Add("30:Axis-ABS");
+                ComboBoxTimeSeriesCategory.Items.Add("31:Axis-FREQ");
+                ComboBoxTimeSeriesCategory.Items.Add("32:Axis-FRTCM");
+                ComboBoxTimeSeriesCategory.Items.Add("33:Axis-VDC");
+                ComboBoxTimeSeriesCategory.Items.Add("34:Axis-ACC");
+                ComboBoxTimeSeriesCategory.Items.Add("35:Axis-ACC1");
+                ComboBoxTimeSeriesCategory.Items.Add("36:Axis-ACC2");
+                ComboBoxTimeSeriesCategory.Items.Add("37:Axis-ACC3");
+                ComboBoxTimeSeriesCategory.Items.Add("38:Axis-FRVCM");
+                ComboBoxTimeSeriesCategory.Items.Add("39:Axis-BLCMP");
+                ComboBoxTimeSeriesCategory.Items.Add("40:Axis-BLAC1");
+                ComboBoxTimeSeriesCategory.Items.Add("41:Axis-BLAC2");
+                ComboBoxTimeSeriesCategory.Items.Add("42:Axis-SMTBKL");
+                ComboBoxTimeSeriesCategory.Items.Add("43:Axis-SMTTRQ");
+                ComboBoxTimeSeriesCategory.Items.Add("44:Axis-SMTBAC");
+                ComboBoxTimeSeriesCategory.Items.Add("45:Axis-ALGOFS");
+                ComboBoxTimeSeriesCategory.Items.Add("46:Axis-ALGOF2");
+            }
+            else if (timeseriesVendorCode_ == 5)
+            {
+                ComboBoxTimeSeriesCategory.Items.Add("1:상태정보 X");
+                ComboBoxTimeSeriesCategory.Items.Add("2:상태정보 Y");
+                ComboBoxTimeSeriesCategory.Items.Add("3:상태정보 G");
+                ComboBoxTimeSeriesCategory.Items.Add("4:상태정보 F");
+                ComboBoxTimeSeriesCategory.Items.Add("5:상태정보 R");
+                ComboBoxTimeSeriesCategory.Items.Add("6:상태정보 T");
+                ComboBoxTimeSeriesCategory.Items.Add("7:상태정보 C");
+                ComboBoxTimeSeriesCategory.Items.Add("8:상태정보 D");
+                ComboBoxTimeSeriesCategory.Items.Add("9:상태정보 SN");
+                ComboBoxTimeSeriesCategory.Items.Add("10:상태정보 SV");
+                ComboBoxTimeSeriesCategory.Items.Add("11:상태정보 SSV");
+                ComboBoxTimeSeriesCategory.Items.Add("12:상태정보 MS");
+            }
+            GetTimeseriesSettingvalue();
+            OffChanged_ = false;
+        }
+
+        private void GetTimeseriesSettingvalue()
+        {
+            OffChanged_ = true;
+            int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+            int tmpTotalCount = 15;
+            string[] addressArray = new string[tmpTotalCount];
+            string[] filter_Array = new string[tmpTotalCount];
+            addressArray[0] = "data://machine/buffer/statusOfStream";
+            filter_Array[0] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[1] = "data://machine/buffer/bufferEnabled";
+            filter_Array[1] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[2] = "data://machine/buffer/numberOfStream";
+            filter_Array[2] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[3] = "data://machine/buffer/modOfStream";
+            filter_Array[3] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[4] = "data://machine/buffer/machineChannelOfStream";
+            filter_Array[4] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[5] = "data://machine/buffer/periodOfStream";
+            filter_Array[5] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[6] = "data://machine/buffer/triggerOfStream";
+            filter_Array[6] = "machine=" + tmpMachineID + "&buffer=1";
+            addressArray[7] = "data://machine/buffer/stream/streamEnabled";
+            filter_Array[7] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[8] = "data://machine/buffer/stream/streamFrequency";
+            filter_Array[8] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[9] = "data://machine/buffer/stream/streamEnabled";
+            filter_Array[9] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[10] = "data://machine/buffer/stream/streamCategory";
+            filter_Array[10] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[11] = "data://machine/buffer/stream/streamSubcategory";
+            filter_Array[11] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[12] = "data://machine/buffer/stream/streamType";
+            filter_Array[12] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[13] = "data://machine/buffer/stream/streamStartBit";
+            filter_Array[13] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            addressArray[14] = "data://machine/buffer/stream/streamEndBit";
+            filter_Array[14] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
+            Item[] itemArray = new Item[tmpTotalCount];
+
+            int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, true, timeout_);
+            if (tmpResult == 556793903)
+            {
+                return;
+            }
+            else
+            {
+                for (int i = 0; i < tmpTotalCount; i++)
+                {
+                    int status = itemArray[i].GetValueInt("status");
+                    if (status == 0)
+                    {
+                        if (i == 0)//data://machine/buffer/statusOfStream
+                        {
+                            int value = itemArray[i].GetValueInt("value");
+                            if (value >= 0 && value <= 5)
+                            {
+                                ComboBoxTimeSeriesStatus.SelectedIndex = value;
+                            }
+                            else if (value == -1)
+                            {
+                                ComboBoxTimeSeriesStatus.SelectedIndex = 6;
+                            }
+                            else if (value == -2)
+                            {
+                                ComboBoxTimeSeriesStatus.SelectedIndex = 7;
+                            }
+                            if (value == 2 || value == 3 || value == 4)
+                            {
+                                ComboBoxTimeSeriesMachieID.IsEnabled = false;
+                                ComboBoxTimeSeriesStatus.IsEnabled = false;
+                                ButtonTimeseriesStart.IsEnabled = false;
+                                ButtonTimeseriesStop.IsEnabled = true;
+                            }
+                            else
+                            {
+                                ComboBoxTimeSeriesMachieID.IsEnabled = true;
+                                ComboBoxTimeSeriesStatus.IsEnabled = true;
+                                ButtonTimeseriesStart.IsEnabled = true;
+                                ButtonTimeseriesStop.IsEnabled = false;
+                            }
+                            if (value == 0)
+                            {
+                                ComboBoxTimeSeriesMode.IsEnabled = true;
+                                TextBoxTimeSeriesPeriod.IsEnabled = true;
+                                ButtonTimeSeriesPeriod.IsEnabled = true;
+                                ComboBoxTimeSeriesFrequency.IsEnabled = true;
+                                ComboBoxTimeSeriesCategory.IsEnabled = true;
+                                TextBoxTimeSeriesSubCategory.IsEnabled = true;
+                                ButtonTimeSeriesSubCategory.IsEnabled = true;
+                            }
+                            else
+                            {
+                                ComboBoxTimeSeriesMode.IsEnabled = false;
+                                TextBoxTimeSeriesPeriod.IsEnabled = false;
+                                ButtonTimeSeriesPeriod.IsEnabled = false;
+                                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                                ComboBoxTimeSeriesCategory.IsEnabled = false;
+                                TextBoxTimeSeriesSubCategory.IsEnabled = false;
+                                ButtonTimeSeriesSubCategory.IsEnabled = false;
+                            }
+                        }
+                        else if (i == 3)//data://machine/buffer/modOfStream
+                        {
+                            int value = itemArray[i].GetValueInt("value");
+                            if (value >= 0 && value <= 3)
+                            {
+                                ComboBoxTimeSeriesMode.SelectedIndex = value;
+                            }
+                        }
+                        else if (i == 5)//data://machine/buffer/periodOfStream
+                        {
+                            int value = itemArray[i].GetValueInt("value");
+                            TextBoxTimeSeriesPeriod.Text = value.ToString();
+                        }
+                        else if (i == 8)//data://machine/buffer/stream/streamFrequency
+                        {
+                            int value = itemArray[i].GetValueInt("value");
+                            if (value == 1000)
+                            {
+                                ComboBoxTimeSeriesFrequency.SelectedIndex = 0;
+                            }
+                        }
+                        else if (i == 10)//data://machine/buffer/stream/streamCategory
+                        {
+
+                            int value = itemArray[i].GetValueInt("value");
+                            if (timeseriesVendorCode_ == 1)
+                            {
+                                ComboBoxTimeSeriesCategory.SelectedIndex = value;
+                            }
+                            else if (timeseriesVendorCode_ == 5)
+                            {
+                                ComboBoxTimeSeriesCategory.SelectedIndex = value - 1;
+                            }
+                        }
+                        else if (i == 11)//data://machine/buffer/stream/streamSubcategory
+                        {
+                            int value = itemArray[i].GetValueInt("value");
+                            TextBoxTimeSeriesSubCategory.Text = value.ToString();
+                        }
+                    }
+                }
+            }
+            OffChanged_ = false;
+        }
+
+        private void ButtonTimeSeries_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender == ButtonTimeSeriesPeriod)
+            {
+                if (!int.TryParse(TextBoxTimeSeriesPeriod.Text, out int targetValue))
+                {
+                    return;
+                }
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/periodOfStream", "machine=" + tmpMachineID + "&buffer=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+            else if (sender == ButtonTimeSeriesSubCategory)
+            {
+                if (!int.TryParse(TextBoxTimeSeriesSubCategory.Text, out int targetValue))
+                {
+                    return;
+                }
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/stream/streamSubcategory", "machine=" + tmpMachineID + "&buffer=1&stream=1", InItem, out _, timeout_);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+        }
+
+        private void ButtonTimeseriesStart_Click(object sender, RoutedEventArgs e)
+        {
+            if (connectResult_ != 0)
+            {
+                System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
+                return;
+            }
+            int statusValue = GetMachineId(ComboBoxTimeSeriesStatus.SelectedItem.ToString());
+            if (statusValue == 0)
+            {
+                System.Windows.MessageBox.Show("[0:설정 가능] 상태에서는 수집할 수 없습니다.", "오류");
+                return;
+            }
+            int bufferIndex = 1;
+            int tmpMachineID = 1;
+            if (ComboBoxTimeSeriesMachieID.SelectedItem != null)
+            {
+                tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                {
+                    if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    {
+                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
+                        return;
+                    }
+                }
+            }
+            if (isTimeSeriesCallbackRegistered_ == false)
+            {
+                Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실핼하는 동안 딱 한번만 등록하면 됩니다.
+                isTimeSeriesCallbackRegistered_ = true;
+            }
+            SetTimeout();
+            int tmpResult = Api.startTimeSeries(bufferIndex, tmpMachineID, timeout_);
+            if (tmpResult == 0)
+            {
+                CheckForTest("startTimeSeries", true);
+                TextBlockTimeseries.Text = "Api.startTimeSeries 성공";
+                ButtonTimeseriesStart.IsEnabled = false;
+
+                var timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(2000);
+                timer.Tick += (s, args) =>
+                {
+                    timer.Stop(); // 타이머 정지
+                    ComboBoxTimeSeriesMachieID.IsEnabled = false;
+                    ComboBoxTimeSeriesStatus.IsEnabled = false;
+                    ComboBoxTimeSeriesMode.IsEnabled = false;
+                    TextBoxTimeSeriesPeriod.IsEnabled = false;
+                    ButtonTimeSeriesPeriod.IsEnabled = false;
+                    ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                    ComboBoxTimeSeriesCategory.IsEnabled = false;
+                    TextBoxTimeSeriesSubCategory.IsEnabled = false;
+                    ButtonTimeSeriesSubCategory.IsEnabled = false;
+                    ButtonTimeseriesStop.IsEnabled = true;
+                    GetTimeseriesSettingvalue(); // 실행할 함수
+                };
+                timer.Start();
+            }
+            else
+            {
+                CheckForTest("startTimeSeries", false);
+                TextBlockTimeseries.Text = "Api.startTimeSeries 실패";
+            }
+        }
+
+        private void ButtonTimeseriesStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (connectResult_ != 0)
+            {
+                System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
+                return;
+            }
+            int bufferIndex = 1;
+            int tmpMachineID = 1;
+            if (ComboBoxTimeSeriesMachieID.SelectedItem != null)
+            {
+                tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                {
+                    if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    {
+                        System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
+                        return;
+                    }
+                }
+            }
+            SetTimeout();
+            int tmpResult = Api.endTimeSeries(bufferIndex, tmpMachineID, timeout_);
+            if (tmpResult == 0)
+            {
+                CheckForTest("endTimeSeries", true);
+                TextBlockTimeseries.Text = "Api.endTimeSeries 성공";
+                ButtonTimeseriesStop.IsEnabled = false;
+                var timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(2000);
+                timer.Tick += (s, args) =>
+                {
+                    timer.Stop(); // 타이머 정지
+                    ComboBoxTimeSeriesMachieID.IsEnabled = true;
+                    ComboBoxTimeSeriesStatus.IsEnabled = true;
+                    ComboBoxTimeSeriesMode.IsEnabled = true;
+                    TextBoxTimeSeriesPeriod.IsEnabled = true;
+                    ButtonTimeSeriesPeriod.IsEnabled = true;
+                    ComboBoxTimeSeriesFrequency.IsEnabled = true;
+                    ComboBoxTimeSeriesCategory.IsEnabled = true;
+                    TextBoxTimeSeriesSubCategory.IsEnabled = true;
+                    ButtonTimeSeriesSubCategory.IsEnabled = true;
+                    ButtonTimeseriesStart.IsEnabled = true;
+
+                    GetTimeseriesSettingvalue(); // 실행할 함수
+                };
+                timer.Start();
+            }
+            else
+            {
+                CheckForTest("endTimeSeries", false);
+                TextBlockTimeseries.Text = "Api.endTimeSeries 실패";
+            }
+
+
         }
     }
 }
