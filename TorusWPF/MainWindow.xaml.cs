@@ -21,6 +21,8 @@ using Microsoft.VisualBasic;
 using System.Windows.Input;
 using System.Net;
 using System.Reflection;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace TorusWPF
 {
@@ -2873,17 +2875,20 @@ namespace TorusWPF
                 TextBlockTimeseries.Text = tmpItem.GetValueString("time");
                 ScootPlotTimeseries.Refresh();
             });
-            Debug.WriteLine("OnTimeseriesBufferData BufferCount: " + dvals.Length);
-            Debug.WriteLine("OnTimeseriesBufferData Start1 Value: " + dvals[0]);
-            Debug.WriteLine("OnTimeseriesBufferData Start2 Value: " + dvals[1]);
-            Debug.WriteLine("OnTimeseriesBufferData Start3 Value: " + dvals[2]);
-            Debug.WriteLine("OnTimeseriesBufferData Start4 Value: " + dvals[3]);
-            Debug.WriteLine("OnTimeseriesBufferData Start5 Value: " + dvals[4]);
-            Debug.WriteLine("OnTimeseriesBufferData End-5 Value: " + dvals[dvals.Length - 5]);
-            Debug.WriteLine("OnTimeseriesBufferData End-4 Value: " + dvals[dvals.Length - 4]);
-            Debug.WriteLine("OnTimeseriesBufferData End-3 Value: " + dvals[dvals.Length - 3]);
-            Debug.WriteLine("OnTimeseriesBufferData End-2 Value: " + dvals[dvals.Length - 2]);
-            Debug.WriteLine("OnTimeseriesBufferData End-1 Value: " + dvals[dvals.Length - 1]);
+            if (dvals.Length >= 10)
+            {
+                Debug.WriteLine("OnTimeseriesBufferData BufferCount: " + dvals.Length);
+                Debug.WriteLine("OnTimeseriesBufferData Start1 Value: " + dvals[0]);
+                Debug.WriteLine("OnTimeseriesBufferData Start2 Value: " + dvals[1]);
+                Debug.WriteLine("OnTimeseriesBufferData Start3 Value: " + dvals[2]);
+                Debug.WriteLine("OnTimeseriesBufferData Start4 Value: " + dvals[3]);
+                Debug.WriteLine("OnTimeseriesBufferData Start5 Value: " + dvals[4]);
+                Debug.WriteLine("OnTimeseriesBufferData End-5 Value: " + dvals[dvals.Length - 5]);
+                Debug.WriteLine("OnTimeseriesBufferData End-4 Value: " + dvals[dvals.Length - 4]);
+                Debug.WriteLine("OnTimeseriesBufferData End-3 Value: " + dvals[dvals.Length - 3]);
+                Debug.WriteLine("OnTimeseriesBufferData End-2 Value: " + dvals[dvals.Length - 2]);
+                Debug.WriteLine("OnTimeseriesBufferData End-1 Value: " + dvals[dvals.Length - 1]);
+            }
             return 0;
         }
 
@@ -3459,7 +3464,7 @@ namespace TorusWPF
                 return;
             }
             int bufferIndex = 1;
-            int tmpMachineID = 1;
+            int tmpMachineID = 0;
             if (ComboBoxTimeSeriesMachieID.SelectedItem != null)
             {
                 tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
@@ -3471,9 +3476,14 @@ namespace TorusWPF
                     }
                 }
             }
+            if (tmpMachineID == 0)
+            {
+                System.Windows.MessageBox.Show("MachineID를 확인하십시오", "오류");
+                return;
+            }
             if (isTimeSeriesCallbackRegistered_ == false)
             {
-                Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실핼하는 동안 딱 한번만 등록하면 됩니다.
+                Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실행하는 동안 딱 한번만 등록하면 됩니다.
                 isTimeSeriesCallbackRegistered_ = true;
             }
             SetTimeout();
@@ -3484,24 +3494,76 @@ namespace TorusWPF
                 TextBlockTimeseries.Text = "Api.startTimeSeries 성공";
                 ButtonTimeseriesStart.IsEnabled = false;
 
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromMilliseconds(2000);
-                timer.Tick += (s, args) =>
+                ComboBoxTimeSeriesMachieID.IsEnabled = false;
+                ComboBoxTimeSeriesStatus.IsEnabled = false;
+                ComboBoxTimeSeriesMode.IsEnabled = false;
+                TextBoxTimeSeriesPeriod.IsEnabled = false;
+                ButtonTimeSeriesPeriod.IsEnabled = false;
+                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                ComboBoxTimeSeriesCategory.IsEnabled = false;
+                TextBoxTimeSeriesSubCategory.IsEnabled = false;
+                ButtonTimeSeriesSubCategory.IsEnabled = false;
+                ButtonTimeseriesStop.IsEnabled = true;
+
+                int currentStatusValue = statusValue;
+                Task.Run(() =>
                 {
-                    timer.Stop(); // 타이머 정지
-                    ComboBoxTimeSeriesMachieID.IsEnabled = false;
-                    ComboBoxTimeSeriesStatus.IsEnabled = false;
-                    ComboBoxTimeSeriesMode.IsEnabled = false;
-                    TextBoxTimeSeriesPeriod.IsEnabled = false;
-                    ButtonTimeSeriesPeriod.IsEnabled = false;
-                    ComboBoxTimeSeriesFrequency.IsEnabled = false;
-                    ComboBoxTimeSeriesCategory.IsEnabled = false;
-                    TextBoxTimeSeriesSubCategory.IsEnabled = false;
-                    ButtonTimeSeriesSubCategory.IsEnabled = false;
-                    ButtonTimeseriesStop.IsEnabled = true;
-                    GetTimeseriesSettingvalue(); // 실행할 함수
-                };
-                timer.Start();
+                    // 1초 대기 (1000ms)
+                    Thread.Sleep(1000);
+                    OffChanged_ = true;
+                    while (true)
+                    {
+                        int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
+                        if (statusResult == 0)
+                        {
+                            int value = item.GetValueInt("value");
+
+                            if (currentStatusValue != value)
+                            {
+                                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    if (value >= 0 && value <= 5)
+                                    {
+                                        ComboBoxTimeSeriesStatus.SelectedIndex = value;
+                                    }
+                                    else if (value == -1)
+                                    {
+                                        ComboBoxTimeSeriesStatus.SelectedIndex = 6;
+                                    }
+                                    else if (value == -2)
+                                    {
+                                        ComboBoxTimeSeriesStatus.SelectedIndex = 7;
+                                    }
+                                });
+                                currentStatusValue = value;
+                            }
+                            if (value != 2 && value != 3 && value != 4)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    OffChanged_ = false;
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        GetTimeseriesSettingvalue();
+                    });
+                });
+
+                //var timer = new DispatcherTimer();
+                //timer.Interval = TimeSpan.FromMilliseconds(1000);
+                //timer.Tick += (s, args) =>
+                //{
+                //    int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
+                //    if (statusResult == 0)
+                //    {
+                //        int value = item.GetValueInt("value");
+                //    }
+                //    timer.Stop(); // 타이머 정지
+                //
+                //    GetTimeseriesSettingvalue(); // 실행할 함수
+                //};
+                //timer.Start();
             }
             else
             {
@@ -3531,39 +3593,84 @@ namespace TorusWPF
                 }
             }
             SetTimeout();
+            int statusValue = GetMachineId(ComboBoxTimeSeriesStatus.SelectedItem.ToString());
             int tmpResult = Api.endTimeSeries(bufferIndex, tmpMachineID, timeout_);
             if (tmpResult == 0)
             {
                 CheckForTest("endTimeSeries", true);
                 TextBlockTimeseries.Text = "Api.endTimeSeries 성공";
-                ButtonTimeseriesStop.IsEnabled = false;
-                var timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromMilliseconds(2000);
-                timer.Tick += (s, args) =>
+                if (isTimeSeriesCallbackRegistered_ == false)
                 {
-                    timer.Stop(); // 타이머 정지
-                    ComboBoxTimeSeriesMachieID.IsEnabled = true;
-                    ComboBoxTimeSeriesStatus.IsEnabled = true;
-                    ComboBoxTimeSeriesMode.IsEnabled = true;
-                    TextBoxTimeSeriesPeriod.IsEnabled = true;
-                    ButtonTimeSeriesPeriod.IsEnabled = true;
-                    ComboBoxTimeSeriesFrequency.IsEnabled = true;
-                    ComboBoxTimeSeriesCategory.IsEnabled = true;
-                    TextBoxTimeSeriesSubCategory.IsEnabled = true;
-                    ButtonTimeSeriesSubCategory.IsEnabled = true;
-                    ButtonTimeseriesStart.IsEnabled = true;
-
-                    GetTimeseriesSettingvalue(); // 실행할 함수
-                };
-                timer.Start();
+                    Task.Run(() =>
+                    {
+                        int currentStatusValue = statusValue;
+                        // 1초 대기 (1000ms)
+                        Thread.Sleep(1000);
+                        OffChanged_ = true;
+                        while (true)
+                        {
+                            int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
+                            if (statusResult == 0)
+                            {
+                                int value = item.GetValueInt("value");
+                                if (currentStatusValue != value)
+                                {
+                                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (value >= 0 && value <= 5)
+                                        {
+                                            ComboBoxTimeSeriesStatus.SelectedIndex = value;
+                                        }
+                                        else if (value == -1)
+                                        {
+                                            ComboBoxTimeSeriesStatus.SelectedIndex = 6;
+                                        }
+                                        else if (value == -2)
+                                        {
+                                            ComboBoxTimeSeriesStatus.SelectedIndex = 7;
+                                        }
+                                    });
+                                    currentStatusValue = value;
+                                }
+                                if (value != 2 && value != 3 && value != 4)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        OffChanged_ = false;
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            GetTimeseriesSettingvalue();
+                        });
+                    });
+                }
+                //ButtonTimeseriesStop.IsEnabled = false;
+                //var timer = new DispatcherTimer();
+                //timer.Interval = TimeSpan.FromMilliseconds(1000);
+                //timer.Tick += (s, args) =>
+                //{
+                //    timer.Stop(); // 타이머 정지
+                //    ComboBoxTimeSeriesMachieID.IsEnabled = true;
+                //    ComboBoxTimeSeriesStatus.IsEnabled = true;
+                //    ComboBoxTimeSeriesMode.IsEnabled = true;
+                //    TextBoxTimeSeriesPeriod.IsEnabled = true;
+                //    ButtonTimeSeriesPeriod.IsEnabled = true;
+                //    ComboBoxTimeSeriesFrequency.IsEnabled = true;
+                //    ComboBoxTimeSeriesCategory.IsEnabled = true;
+                //    TextBoxTimeSeriesSubCategory.IsEnabled = true;
+                //    ButtonTimeSeriesSubCategory.IsEnabled = true;
+                //    ButtonTimeseriesStart.IsEnabled = true;
+                //
+                //    GetTimeseriesSettingvalue(); // 실행할 함수
+                //};
+                //timer.Start();
             }
             else
             {
                 CheckForTest("endTimeSeries", false);
                 TextBlockTimeseries.Text = "Api.endTimeSeries 실패";
             }
-
-
         }
     }
 }

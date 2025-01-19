@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.8" Height="920" Width="1810">
+        Title="TorusTester C# v2.3.9" Height="920" Width="1810">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="750"></ColumnDefinition>

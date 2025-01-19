@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.9
+- 시계열 데이터 수집 설정 기능 개선
+
 v2.3.8
 - 시계열 데이터 수집 설정 기능 메뉴 추가
 
