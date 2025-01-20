@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.10
+- 시계열 데이터 수집시 현재 Status정보 파악시의 슬립 구간 조정
+
 v2.3.9
 - 시계열 데이터 수집 설정 기능 개선
 

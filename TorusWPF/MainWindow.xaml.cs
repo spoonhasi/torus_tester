@@ -3508,11 +3508,10 @@ namespace TorusWPF
                 int currentStatusValue = statusValue;
                 Task.Run(() =>
                 {
-                    // 1초 대기 (1000ms)
-                    Thread.Sleep(1000);
                     OffChanged_ = true;
                     while (true)
                     {
+                        Thread.Sleep(1000);
                         int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
                         if (statusResult == 0)
                         {
@@ -3549,21 +3548,6 @@ namespace TorusWPF
                         GetTimeseriesSettingvalue();
                     });
                 });
-
-                //var timer = new DispatcherTimer();
-                //timer.Interval = TimeSpan.FromMilliseconds(1000);
-                //timer.Tick += (s, args) =>
-                //{
-                //    int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
-                //    if (statusResult == 0)
-                //    {
-                //        int value = item.GetValueInt("value");
-                //    }
-                //    timer.Stop(); // 타이머 정지
-                //
-                //    GetTimeseriesSettingvalue(); // 실행할 함수
-                //};
-                //timer.Start();
             }
             else
             {
@@ -3604,11 +3588,10 @@ namespace TorusWPF
                     Task.Run(() =>
                     {
                         int currentStatusValue = statusValue;
-                        // 1초 대기 (1000ms)
-                        Thread.Sleep(1000);
                         OffChanged_ = true;
                         while (true)
                         {
+                            Thread.Sleep(1000);
                             int statusResult = Api.getData("data://machine/buffer/statusOfStream", "machine=" + tmpMachineID + "&buffer=1", out Item item, true, timeout_);
                             if (statusResult == 0)
                             {
@@ -3645,26 +3628,6 @@ namespace TorusWPF
                         });
                     });
                 }
-                //ButtonTimeseriesStop.IsEnabled = false;
-                //var timer = new DispatcherTimer();
-                //timer.Interval = TimeSpan.FromMilliseconds(1000);
-                //timer.Tick += (s, args) =>
-                //{
-                //    timer.Stop(); // 타이머 정지
-                //    ComboBoxTimeSeriesMachieID.IsEnabled = true;
-                //    ComboBoxTimeSeriesStatus.IsEnabled = true;
-                //    ComboBoxTimeSeriesMode.IsEnabled = true;
-                //    TextBoxTimeSeriesPeriod.IsEnabled = true;
-                //    ButtonTimeSeriesPeriod.IsEnabled = true;
-                //    ComboBoxTimeSeriesFrequency.IsEnabled = true;
-                //    ComboBoxTimeSeriesCategory.IsEnabled = true;
-                //    TextBoxTimeSeriesSubCategory.IsEnabled = true;
-                //    ButtonTimeSeriesSubCategory.IsEnabled = true;
-                //    ButtonTimeseriesStart.IsEnabled = true;
-                //
-                //    GetTimeseriesSettingvalue(); // 실행할 함수
-                //};
-                //timer.Start();
             }
             else
             {
