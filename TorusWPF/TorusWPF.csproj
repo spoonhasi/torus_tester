@@ -21,10 +21,13 @@
 
   <ItemGroup>
     <Reference Include="IntelligentApiCS">
-      <HintPath>..\Api\IntelligentApiCS.dll</HintPath>
+      <HintPath>..\..\TorusThreadTester\Api\IntelligentApiCS.dll</HintPath>
     </Reference>
     <Reference Include="ItemCS">
-      <HintPath>..\Api\ItemCS.dll</HintPath>
+      <HintPath>..\..\TorusThreadTester\Api\ItemCS.dll</HintPath>
+    </Reference>
+    <Reference Include="TorusAddressMapping">
+      <HintPath>..\..\torus_tool\TorusAddressMapping\bin\Release\net8.0-windows\TorusAddressMapping.dll</HintPath>
     </Reference>
   </ItemGroup>
 

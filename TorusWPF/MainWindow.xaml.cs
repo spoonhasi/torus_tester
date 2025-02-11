@@ -1206,7 +1206,13 @@ namespace TorusWPF
             filter_Array[2] = "machine=" + tmpMachineID.ToString();
             int result = Api.getData(addressArray, filter_Array, out Item[] itemArray, true, timeout_);
             //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 항목을 살펴서 "error"가 포함되어 있다면 오류, 아니라면 정상값입니다.
-            if (result == 556793903)
+            if (result == 556793903 || result == 558891055)
+            {
+                TextBlockMemoryTotal.Text = "Timeout";
+                TextBlockMemoryUsed.Text = "Timeout";
+                TextBlockMemoryFree.Text = "Timeout";
+            }
+            else if (itemArray == null)
             {
                 TextBlockMemoryTotal.Text = "오류";
                 TextBlockMemoryUsed.Text = "오류";
@@ -1216,6 +1222,10 @@ namespace TorusWPF
             {
                 for (int i = 0; i < itemArray.Length; i++)
                 {
+                    if (itemArray[i] == null)
+                    {
+                        continue;
+                    }
                     int status = itemArray[i].GetValueInt("status");
                     if (status == 0)
                     {
@@ -2617,7 +2627,7 @@ namespace TorusWPF
                 int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, direct_, timeout_);
                 stopwatch.Stop();
                 //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 "status"의 값이 0이 아니라면 오류입니다.
-                if (tmpResult == 556793903)
+                if (tmpResult == 556793903 || tmpResult == 558891055)
                 {
                     string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     for (int i = 0; i < tmpTotalCount; i++)
@@ -3298,7 +3308,7 @@ namespace TorusWPF
             Item[] itemArray = new Item[tmpTotalCount];
 
             int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, true, timeout_);
-            if (tmpResult == 556793903)
+            if (tmpResult == 556793903 || tmpResult == 558891055)
             {
                 return;
             }

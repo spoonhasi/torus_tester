@@ -163,8 +163,12 @@
                         <ComboBoxItem Content="Ethernet"/>
                         <ComboBoxItem Content="OPCUA"/>
                         <ComboBoxItem Content="HSSB"/>
+                        <ComboBoxItem Content="EtherCAT"/>
                         <ComboBoxItem Content="MyHMI"/>
                         <ComboBoxItem Content="MTConnect"/>
+                        <ComboBoxItem Content="DDE"/>
+                        <ComboBoxItem Content="BuiltIn"/>
+                        <ComboBoxItem Content="DNC"/>
                     </ComboBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Grid.Row="2">
