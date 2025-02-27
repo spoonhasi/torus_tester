@@ -1036,21 +1036,21 @@ namespace TorusWPF
             {
                 _errCodeString = "NC_ERR_NULL_VALUE";
             }
-            else if (result == "0x21B00033")
+            else if (result == "0X20206028")
             {
-                _errCodeString = "address 혹은 filter가 누락되거나 오타가 있는 경우";
+                _errCodeString = "MgrCommunication Address 또는 Filter 오류";
             }
-            else if (result == "0x2130001C")
+            else if (result == "0X2150001C")
             {
-                _errCodeString = "mgrComunication가 종료된 경우";
+                _errCodeString = "LibRpcClient Connect 오류";
             }
-            else if (result == "0x2130002F")
+            else if (result == "0x2150002F")
             {
-                _errCodeString = "응답 시간 초과";
+                _errCodeString = "LibRpcClient TimeOut 오류";
             }
             else
             {
-                _errCodeString = "알려진 에러코드가 아닙니다.";
+                _errCodeString = "매뉴얼의 에러코드를 참조하십시오.";
             }
             return result + " (" + _errCode + ")";
         }
@@ -1204,9 +1204,48 @@ namespace TorusWPF
             filter_Array[1] = "machine=" + tmpMachineID.ToString();
             addressArray[2] = "data://machine/ncmemory/freecapacity";
             filter_Array[2] = "machine=" + tmpMachineID.ToString();
+            int result = Api.getData(addressArray[0], filter_Array[0], out Item itemTotalcapacity, true, timeout_);
+            if (result == 558891055)
+            {
+                TextBlockMemoryTotal.Text = "Timeout";
+            }
+            else if (result != 0 || itemTotalcapacity == null)
+            {
+                TextBlockMemoryTotal.Text = "오류";
+            }
+            else
+            {
+                TextBlockMemoryTotal.Text = itemTotalcapacity.GetValueString("value");
+            }
+            result = Api.getData(addressArray[1], filter_Array[1], out Item itemUsedcapacity, true, timeout_);
+            if (result == 558891055)
+            {
+                TextBlockMemoryUsed.Text = "Timeout";
+            }
+            else if (result != 0 || itemUsedcapacity == null)
+            {
+                TextBlockMemoryUsed.Text = "오류";
+            }
+            else
+            {
+                TextBlockMemoryUsed.Text = itemUsedcapacity.GetValueString("value");
+            }
+            result = Api.getData(addressArray[2], filter_Array[2], out Item itemFreecapacity, true, timeout_);
+            if (result == 558891055)
+            {
+                TextBlockMemoryFree.Text = "Timeout";
+            }
+            else if (result != 0 || itemFreecapacity == null)
+            {
+                TextBlockMemoryFree.Text = "오류";
+            }
+            else
+            {
+                TextBlockMemoryFree.Text = itemFreecapacity.GetValueString("value");
+            }
+            /*
             int result = Api.getData(addressArray, filter_Array, out Item[] itemArray, true, timeout_);
-            //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 항목을 살펴서 "error"가 포함되어 있다면 오류, 아니라면 정상값입니다.
-            if (result == 556793903 || result == 558891055)
+            if (result == 558891055)
             {
                 TextBlockMemoryTotal.Text = "Timeout";
                 TextBlockMemoryUsed.Text = "Timeout";
@@ -1260,6 +1299,7 @@ namespace TorusWPF
                     }
                 }
             }
+            */
             Item item;
             int tmpResult;
             ListBoxFileList.Items.Clear();
@@ -2627,7 +2667,7 @@ namespace TorusWPF
                 int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, direct_, timeout_);
                 stopwatch.Stop();
                 //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 "status"의 값이 0이 아니라면 오류입니다.
-                if (tmpResult == 556793903 || tmpResult == 558891055)
+                if (tmpResult == 558891055)
                 {
                     string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     for (int i = 0; i < tmpTotalCount; i++)
@@ -3308,7 +3348,7 @@ namespace TorusWPF
             Item[] itemArray = new Item[tmpTotalCount];
 
             int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, true, timeout_);
-            if (tmpResult == 556793903 || tmpResult == 558891055)
+            if (tmpResult == 558891055)
             {
                 return;
             }
