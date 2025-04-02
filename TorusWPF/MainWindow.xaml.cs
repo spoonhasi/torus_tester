@@ -133,32 +133,32 @@ namespace TorusWPF
             WritePrivateProfileString(_section, _key, _contents, System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _settingFileName));
         }
 
-        private List<MachineObject> connectedMachineList_ = [];
-        private int connectResult_;
-        private int cncVendorCode_;
-        private int timeseriesVendorCode_;
-        private Thread threadSingle_;
-        private bool threadSignlestopFlag_;
-        private Thread threadMulti_;
-        private bool threadMultistopFlag_;
-        private string commonFilter_;
-        private int SignalCopyOrMove_;
-        private string addressFilePath_;
+        private List<MachineObject> _connectedMachineList = [];
+        private int _connectResult;
+        private int _cncVendorCode;
+        private int _timeseriesVendorCode;
+        private Thread _threadSingle;
+        private bool _threadSignlestopFlag;
+        private Thread _threadMulti;
+        private bool _threadMultistopFlag;
+        private string _commonFilter;
+        private int _signalCopyOrMove;
+        private string _addressFilePath;
         private bool _singleDirect;
         private bool _multiDirect;
         private int _timeout;
         private int _userApiTimeout;
-        private bool isTimeSeriesCallbackRegistered_;
-        private bool OffChanged_;
+        private bool _isTimeSeriesCallbackRegistered;
+        private bool _OffChanged;
         private bool _isSingleRunning;
         private bool _isMultiRunning;
-        private ObservableCollection<NCmachine> ncMachineList_ { get; set; } = [];
+        private readonly object _lock = new();
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.3.1의 API로 제작되었습니다.
+            // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.3.2의 API로 제작되었습니다.
             ButtonTimeseriesStart.IsEnabled = false;
             ButtonTimeseriesStop.IsEnabled = false;
 
@@ -174,32 +174,35 @@ namespace TorusWPF
 
             _isSingleRunning = false;
             _isMultiRunning = false;
-            OffChanged_ = true;
-            isTimeSeriesCallbackRegistered_ = false;
-            connectResult_ = -1;
-            cncVendorCode_ = 0;
-            timeseriesVendorCode_ = 0;
-            SignalCopyOrMove_ = 0; // 0은 초기화, 1은 복사, 2는 이동
+            _OffChanged = true;
+            _isTimeSeriesCallbackRegistered = false;
+            _connectResult = -1;
+            _cncVendorCode = 0;
+            _timeseriesVendorCode = 0;
+            _signalCopyOrMove = 0; // 0은 초기화, 1은 복사, 2는 이동
             ButtonSingleStart.IsEnabled = false;
             ButtonSingleStop.IsEnabled = false;
             ButtonMultiStart.IsEnabled = false;
             ButtonMultiStop.IsEnabled = false;
             ButtonMachineMonitoringStart.IsEnabled = false;
             ButtonMachineMonitoringStop.IsEnabled = false;
-            TextBlockSon.Text = "0";
-            TextBlockMom.Text = "0";
-            TextBlockGetDataSon.Text = "0";
-            TextBlockGetDataMom.Text = "0";
-            TextBlockGetDataPercent.Text = "%";
-            TextBlockMissionSon.Text = "0";
-            TextBlockMissionMom.Text = "0";
-            TextBlockTotalSon.Text = "0";
-            TextBlockTotalMom.Text = "0";
+            TextBlockSinglePassed.Text = "0";
+            TextBlockSinglePassedAll.Text = "0";
+            TextBlockMultiSuccess.Text = "0";
+            TextBlockMultiAll.Text = "0";
+            TextBlockMultiPercent.Text = "%";
+            TextBlockSingleSuccess.Text = "0";
+            TextBlockSingleAll.Text = "0";
+            TextBlockSinglePercent.Text = "%";
+            TextBlockMissionSuccess.Text = "0";
+            TextBlockMissionAll.Text = "0";
+            TextBlockTotalSuccess.Text = "0";
+            TextBlockTotalAll.Text = "0";
             TextBlockTotalPercent.Text = "%";
             TextBlockAddressFilePath.Text = "";
             TextBoxTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "Timeout", "100000");
             TextBoxUserApiTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "UserApiTimeout", "100000");
-            addressFilePath_ = "";
+            _addressFilePath = "";
             TextBlockMemoryTotal.Text = "";
             TextBlockMemoryUsed.Text = "";
             TextBlockMemoryFree.Text = "";
@@ -242,10 +245,10 @@ namespace TorusWPF
 
         ~MainWindow()
         {
-            threadSignlestopFlag_ = true;
-            threadSingle_?.Join();
-            threadMultistopFlag_ = true;
-            threadMulti_?.Join();
+            _threadSignlestopFlag = true;
+            _threadSingle?.Join();
+            _threadMultistopFlag = true;
+            _threadMulti?.Join();
         }
         public static int GetMachineId(string _id_name)
         {
@@ -321,34 +324,45 @@ namespace TorusWPF
 
         private void CalTotal()
         {
-            double tmpGetDataSonCount = Convert.ToInt32(TextBlockGetDataSon.Text);
-            double tmpGetDataMomCount = Convert.ToInt32(TextBlockGetDataMom.Text);
+            double tmpSingleSuccessCount = Convert.ToDouble(TextBlockSingleSuccess.Text);
+            double tmpMultiSuccessCount = Convert.ToDouble(TextBlockMultiSuccess.Text);
+            double tmpGetDataSuccessCount = Math.Max(tmpSingleSuccessCount, tmpMultiSuccessCount);
+            double tmpSingleAllCount = Convert.ToDouble(TextBlockSingleAll.Text);
+            double tmpMultiAllCount = Convert.ToDouble(TextBlockMultiAll.Text);
+            double tmpGetDataAllCount;
+            if (tmpSingleSuccessCount > tmpMultiSuccessCount)
+            {
+                tmpGetDataAllCount = tmpSingleAllCount;
+            }
+            else
+            {
+                tmpGetDataAllCount = tmpMultiAllCount;
+            }
             double tmpGetDataPercent;
-            if (tmpGetDataMomCount == 0)
+            if (tmpGetDataAllCount == 0)
             {
                 tmpGetDataPercent = 0;
             }
             else
             {
-                tmpGetDataPercent = tmpGetDataSonCount / tmpGetDataMomCount * 100;
+                tmpGetDataPercent = tmpGetDataSuccessCount / tmpGetDataAllCount * 100;
             }
-            double tmpMissionSonCount = Convert.ToInt32(TextBlockMissionSon.Text);
-            double tmpMissionMomCount = Convert.ToInt32(TextBlockMissionMom.Text);
-            double tmpTotalSon = tmpGetDataSonCount + tmpMissionSonCount;
-            double tmpTotalMom = tmpGetDataMomCount + tmpMissionMomCount;
-            TextBlockTotalSon.Text = tmpTotalSon.ToString();
-            TextBlockTotalMom.Text = tmpTotalMom.ToString();
+            double tmpMissionSuccessCount = Convert.ToInt32(TextBlockMissionSuccess.Text);
+            double tmpMissionAllCount = Convert.ToInt32(TextBlockMissionAll.Text);
+            double tmpTotalSuccess = tmpGetDataSuccessCount + tmpMissionSuccessCount;
+            double tmpTotalAll = tmpGetDataAllCount + tmpMissionAllCount;
+            TextBlockTotalSuccess.Text = tmpTotalSuccess.ToString();
+            TextBlockTotalAll.Text = tmpTotalAll.ToString();
             double tmpTotalPercent;
-            if (tmpTotalMom == 0)
+            if (tmpTotalAll == 0)
             {
                 tmpTotalPercent = 0;
             }
             else
             {
-                tmpTotalPercent = tmpTotalSon / tmpTotalMom * 100;
+                tmpTotalPercent = tmpTotalSuccess / tmpTotalAll * 100;
             }
-            TextBlockGetDataPercent.Text = tmpGetDataPercent.ToString("#.##") + "%";
-            TextBlockTotalPercent.Text = tmpTotalPercent.ToString("#.##") + "%";
+            TextBlockTotalPercent.Text = tmpTotalPercent.ToString("0.##") + "%";
         }
 
         private void CheckForTest(string _functionName, bool _successOrFail)
@@ -379,8 +393,8 @@ namespace TorusWPF
                     tmpGoodCount++;
                 }
             }
-            TextBlockMissionMom.Text = ListBoxMachineMission.Items.Count.ToString();
-            TextBlockMissionSon.Text = tmpGoodCount.ToString();
+            TextBlockMissionAll.Text = ListBoxMachineMission.Items.Count.ToString();
+            TextBlockMissionSuccess.Text = tmpGoodCount.ToString();
             CalTotal();
         }
 
@@ -406,14 +420,14 @@ namespace TorusWPF
 
         private void Connect(string mapFilePath = "")
         {
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 // "TorusTester.info"에 기록된 "App ID"와 "App Name"을 사용합니다.
                 try
                 {
                     if (mapFilePath == "")
                     {
-                        connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName);
+                        _connectResult = Api.Initialize(new Guid(Constants.AppID), Constants.AppName);
                     }
                     else
                     {
@@ -434,7 +448,7 @@ namespace TorusWPF
                                 File.Copy(mapFilePath, destFilePath, true); // 덮어쓰기 옵션 true
                                 Debug.WriteLine("파일이 성공적으로 복사되었습니다.");
                             }
-                            connectResult_ = Api.Initialize(new Guid(Constants.AppID), Constants.AppName, fileName);
+                            _connectResult = Api.Initialize(new Guid(Constants.AppID), Constants.AppName, fileName);
                         }
                         catch (Exception ex)
                         {
@@ -448,9 +462,9 @@ namespace TorusWPF
                     return;
                 }
             }
-            if (connectResult_ == 0)
+            if (_connectResult == 0)
             {
-                connectedMachineList_.Clear();
+                _connectedMachineList.Clear();
                 ComboBoxMachieID.Items.Clear();
                 ComboBoxTimeSeriesMachieID.Items.Clear();
                 bool first = true;
@@ -458,8 +472,8 @@ namespace TorusWPF
                 if (result == 0)
                 {
                     MachinesObject machinesObject = JsonSerializer.Deserialize<MachinesObject>(item.ToString());
-                    connectedMachineList_ = [.. machinesObject.Value.OrderBy(item => item.ID)];
-                    foreach (var machine in connectedMachineList_)
+                    _connectedMachineList = [.. machinesObject.Value.OrderBy(item => item.ID)];
+                    foreach (var machine in _connectedMachineList)
                     {
                         ComboBoxMachieID.Items.Add(machine.ID + ":" + machine.Name);
                         ComboBoxTimeSeriesMachieID.Items.Add(machine.ID + ":" + machine.Name);
@@ -476,27 +490,27 @@ namespace TorusWPF
                 else
                 {
                     System.Windows.MessageBox.Show("연결되어 있는 설비가 없습니다. 연결을 종료합니다.", "오류");
-                    connectResult_ = -1;
+                    _connectResult = -1;
                 }
             }
-            else if (connectResult_ == 546308133)
+            else if (_connectResult == 546308133)
             {
-                System.Windows.MessageBox.Show("TORUS 구동에 필요한 DLL 파일을 찾을 수 없거나 TORUS가 실행중이 아닙니다.\n오류코드: " + connectResult_, "오류");
+                System.Windows.MessageBox.Show("TORUS 구동에 필요한 DLL 파일을 찾을 수 없거나 TORUS가 실행중이 아닙니다.\n오류코드: " + _connectResult, "오류");
             }
-            else if (connectResult_ == 548405285)
+            else if (_connectResult == 548405285)
             {
-                System.Windows.MessageBox.Show("오류코드: " + connectResult_, "오류");
+                System.Windows.MessageBox.Show("오류코드: " + _connectResult, "오류");
             }
-            else if (connectResult_ == 548405249)
+            else if (_connectResult == 548405249)
             {
-                System.Windows.MessageBox.Show("오류코드: " + connectResult_, "오류");
+                System.Windows.MessageBox.Show("오류코드: " + _connectResult, "오류");
             }
             else
             {
-                System.Windows.MessageBox.Show("알 수 없는 오류 : " + connectResult_.ToString(), "오류");
+                System.Windows.MessageBox.Show("알 수 없는 오류 : " + _connectResult.ToString(), "오류");
             }
 
-            if (connectResult_ == 0)
+            if (_connectResult == 0)
             {
                 ButtonConnect.IsEnabled = false;
                 ButtonConnectWith.IsEnabled = false;
@@ -560,9 +574,11 @@ namespace TorusWPF
                 }
             }
             TextBlockAddressFilePath.Text = _filePath;
-            addressFilePath_ = _filePath;
-            TextBlockMissionSon.Text = "0";
-            TextBlockMom.Text = ListBoxMachineState.Items.Count.ToString();
+            _addressFilePath = _filePath;
+            TextBlockMissionSuccess.Text = "0";
+            TextBlockSingleAll.Text = ListBoxMachineState.Items.Count.ToString();
+            TextBlockSinglePassedAll.Text = ListBoxMachineState.Items.Count.ToString();
+            TextBlockMultiAll.Text = ListBoxMachineState.Items.Count.ToString();
             AddForTest(MachineState.totalCount);
             WriteConfig(Constants.ConfigFileName, "Main", "LastMachineStateModelFilePath", _filePath);
         }
@@ -586,9 +602,11 @@ namespace TorusWPF
             ListBoxMachineState.Items.Clear();
             MachineState.totalCount = 0;
             TextBlockAddressFilePath.Text = "";
-            addressFilePath_ = "";
-            TextBlockMissionSon.Text = "0";
-            TextBlockMom.Text = "0";
+            _addressFilePath = "";
+            TextBlockMissionSuccess.Text = "0";
+            TextBlockSingleAll.Text = "0";
+            TextBlockSinglePassedAll.Text = "0";
+            TextBlockMultiAll.Text = "0";
             AddForTest(MachineState.totalCount);
         }
 
@@ -606,24 +624,24 @@ namespace TorusWPF
             TextBoxCommonFilter.IsReadOnly = true;
             ButtonSingleStart.IsEnabled = false;
             ButtonLoad.IsEnabled = false;
-            commonFilter_ = TextBoxCommonFilter.Text.Trim();
-            if (commonFilter_ != "")
+            _commonFilter = TextBoxCommonFilter.Text.Trim();
+            if (_commonFilter != "")
             {
-                if (commonFilter_.Substring(commonFilter_.Length - 1, 1) == "&")
+                if (_commonFilter.Substring(_commonFilter.Length - 1, 1) == "&")
                 {
-                    commonFilter_ = commonFilter_[..^1]; //Substring(0, commonFilter_.Length - 1)
+                    _commonFilter = _commonFilter[..^1]; //Substring(0, commonFilter_.Length - 1)
                 }
-                if (commonFilter_[..1] == "&")
+                if (_commonFilter[..1] == "&")
                 {
-                    commonFilter_ = commonFilter_.Substring(1, commonFilter_.Length);
+                    _commonFilter = _commonFilter.Substring(1, _commonFilter.Length);
                 }
             }
-            threadSignlestopFlag_ = false;
-            threadSingle_ = new Thread(() => ThreadSingle(check))
+            _threadSignlestopFlag = false;
+            _threadSingle = new Thread(() => ThreadSingle(check))
             {
                 IsBackground = true
             };
-            threadSingle_.Start();
+            _threadSingle.Start();
             ButtonSingleStop.IsEnabled = true;
         }
 
@@ -634,6 +652,9 @@ namespace TorusWPF
             bool tmpCountCheck = true;
             _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
             {
+                TextBlockSinglePercent.Text = "%";
+                TextBlockSingleSuccess.Text = "0";
+                TextBlockSinglePassed.Text = "0";
                 TextBoxSingleThreadResult.Text = "";
                 TextBlockSingleGetDataCurrentCount.Text = "0";
             }));
@@ -662,15 +683,20 @@ namespace TorusWPF
             int timeLineCount = 0;
             int tmpProcessCount = 0;
             int tmpErrCount = 0;
-            int tmpSuccessCount = 0;
+            double tmpSuccessCount = 0;
             int tmpTotalCount = ListBoxMachineState.Items.Count;
             string tmpAddress = "";
             string tmpFilter = "";
             int tmpResult = -1;
             string tmpErrorMessage = "";
             string tmpErrorCode = "";
+            double tmpAllCount = 0;
+            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+            {
+                tmpAllCount = Convert.ToInt32(TextBlockSingleAll.Text);
+            }));
             Stopwatch stopwatch = new();
-            while (!threadSignlestopFlag_)
+            while (!_threadSignlestopFlag)
             {
                 tmpOneTurnTime = 0;
                 tmpProcessCount = 0;
@@ -683,84 +709,84 @@ namespace TorusWPF
                     _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                     {
                         (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(80, 166, 255, 50);
-                        TextBlockSon.Text = tmpProcessCount.ToString();
+                        TextBlockSinglePassed.Text = tmpProcessCount.ToString();
                     }));
                     tmpAddress = (ListBoxMachineState.Items[i] as MachineState).address;
                     tmpFilter = (ListBoxMachineState.Items[i] as MachineState).filter;
-                    if (commonFilter_ != "")
+                    if (_commonFilter != "")
                     {
                         if (tmpFilter != "")
                         {
-                            tmpFilter = commonFilter_ + "&" + tmpFilter;
+                            tmpFilter = _commonFilter + "&" + tmpFilter;
                         }
                         else
                         {
-                            tmpFilter = commonFilter_;
+                            tmpFilter = _commonFilter;
                         }
                     }
                     stopwatch.Restart();
                     tmpResult = Api.getData(tmpAddress, tmpFilter, out Item item, _singleDirect, _timeout);
                     stopwatch.Stop();
-                    if (tmpResult == 0)
+                    lock (_lock)
                     {
-                        _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                        if (tmpResult == 0)
                         {
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResult(item.ToString());
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(item));
-                            (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-                        }));
-                        if (true)
-                        {
-                            if (item == null)
+                            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                             {
-                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                                {
-                                    MessageBox.Show("null 반환 발생", "Single 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                                }));
-                                Debug.WriteLine("null 반환 발생");
-                            }
-                            string returnAddress = item.GetValueString("address");
-                            string returnFilter = item.GetValueString("filter");
-                            if (!string.Equals(tmpAddress, returnAddress, StringComparison.OrdinalIgnoreCase) || !string.Equals(tmpFilter, returnFilter, StringComparison.OrdinalIgnoreCase))
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResult(item.ToString());
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(item));
+                                (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertSingleTime("Single 성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                            }));
+                            if (true)
                             {
-                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                if (item == null)
                                 {
-                                    MessageBox.Show("불일치 발생\n" + tmpAddress + "\n" +
-                                        returnAddress + "\n" + tmpFilter + "\n" + returnFilter, "Single 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                                }));
-                                Debug.WriteLine("불일치 발생\n" + tmpAddress + "\n" + returnAddress + "\n" + tmpFilter + "\n" + returnFilter);
+                                    _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                    {
+                                        MessageBox.Show("null 반환 발생", "Single 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }));
+                                    Debug.WriteLine("null 반환 발생");
+                                }
+                                string returnAddress = item.GetValueString("address");
+                                string returnFilter = item.GetValueString("filter");
+                                if (!string.Equals(tmpAddress, returnAddress, StringComparison.OrdinalIgnoreCase) || !string.Equals(tmpFilter, returnFilter, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                    {
+                                        MessageBox.Show("불일치 발생\n" + tmpAddress + "\n" +
+                                            returnAddress + "\n" + tmpFilter + "\n" + returnFilter, "Single 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }));
+                                    Debug.WriteLine("불일치 발생\n" + tmpAddress + "\n" + returnAddress + "\n" + tmpFilter + "\n" + returnFilter);
+                                }
                             }
+                            tmpSuccessCount++;
                         }
-                        tmpSuccessCount++;
-                    }
-                    else
-                    {
-                        tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
-                        _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                        else
                         {
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
-                            (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-                        }));
-                        tmpErrCount++;
+                            tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                            {
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
+                                (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
+                                (ListBoxMachineState.Items[i] as MachineState).InsertSingleTime("Single 실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                            }));
+                            tmpErrCount++;
+                        }
                     }
+                    Thread.Sleep(1);
                     tmpOneTurnTime += stopwatch.ElapsedMilliseconds;
-                    if (threadSignlestopFlag_)
+                    if (_threadSignlestopFlag)
                     {
                         break;
                     }
                 }
-                if (tmpTotalCount == tmpSuccessCount + tmpErrCount)
+                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                 {
-                    _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                    {
-                        TextBlockGetDataSon.Text = tmpSuccessCount.ToString();
-                        TextBlockGetDataMom.Text = tmpTotalCount.ToString();
-                        CalTotal();
-                    }));
-                }
+                    TextBlockSingleSuccess.Text = tmpSuccessCount.ToString();
+                    TextBlockSinglePercent.Text = (tmpSuccessCount / tmpAllCount * 100).ToString("0.##") + "%";
+                }));
                 if (tmpCountCheck)
                 {
                     tmpTotalTime += tmpOneTurnTime;
@@ -772,7 +798,7 @@ namespace TorusWPF
                     }));
                     if (tmpGetDataCurrentCount >= tmpGetDataTargetCount)
                     {
-                        threadSignlestopFlag_ = true;
+                        _threadSignlestopFlag = true;
                     }
                 }
                 else
@@ -827,7 +853,7 @@ namespace TorusWPF
         public void OneGetData(int _index)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -855,20 +881,23 @@ namespace TorusWPF
             stopwatch.Restart();
             int tmpResult = Api.getData(tmpAddress, tmpFilter, out Item item, true, _timeout);//하나만 실행
             stopwatch.Stop();
-            if (tmpResult == 0)
+            lock (_lock)
             {
-                (ListBoxMachineState.Items[_index] as MachineState).InsertResult(item.ToString());
-                (ListBoxMachineState.Items[_index] as MachineState).InsertResultDescribe(MakeSuccessMessage(item));
-                (ListBoxMachineState.Items[_index] as MachineState).DrawColorMan(100, 103, 153, 255);
-                (ListBoxMachineState.Items[_index] as MachineState).InsertTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-            }
-            else
-            {
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
-                (ListBoxMachineState.Items[_index] as MachineState).InsertResult(tmpErrorCode);
-                (ListBoxMachineState.Items[_index] as MachineState).InsertResultDescribe(tmpErrorMessage);
-                (ListBoxMachineState.Items[_index] as MachineState).DrawColorMan(30, 255, 100, 100);
-                (ListBoxMachineState.Items[_index] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                if (tmpResult == 0)
+                {
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertResult(item.ToString());
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertResultDescribe(MakeSuccessMessage(item));
+                    (ListBoxMachineState.Items[_index] as MachineState).DrawColorMan(100, 103, 153, 255);
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertSingleTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertResult(tmpErrorCode);
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertResultDescribe(tmpErrorMessage);
+                    (ListBoxMachineState.Items[_index] as MachineState).DrawColorMan(30, 255, 100, 100);
+                    (ListBoxMachineState.Items[_index] as MachineState).InsertSingleTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                }
             }
             (ListBoxMachineState.Items[_index] as MachineState).ButtonOneGetData.IsEnabled = true;
         }
@@ -881,7 +910,7 @@ namespace TorusWPF
             {
                 return;
             }
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -1446,12 +1475,12 @@ namespace TorusWPF
         private void ButtonCopyOrMove_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (SignalCopyOrMove_ == 0) // 0은 초기화, 1은 복사, 2는 이동
+            if (_signalCopyOrMove == 0) // 0은 초기화, 1은 복사, 2는 이동
             {
                 System.Windows.MessageBox.Show("복사 혹은 이동할 파일을 지정하지 않았습니다.");
                 return;
             }
-            else if (SignalCopyOrMove_ == 1) //(1)복사
+            else if (_signalCopyOrMove == 1) //(1)복사
             {
                 MessageBoxResult result = System.Windows.MessageBox.Show("현재 폴더로 파일을 복사 하시겠습니까?", "복사", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.No)
@@ -1476,7 +1505,7 @@ namespace TorusWPF
             }
             string fileName = tmpCopyOrMove.Substring(tmpCopyOrMove.LastIndexOf('/') + 1);
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            if (SignalCopyOrMove_ == 1)
+            if (_signalCopyOrMove == 1)
             {
                 Item item;
                 int result = Api.CNCFileCopy(tmpCopyOrMove, tmpCurrentPath + fileName, out item, tmpMachineID, _userApiTimeout);
@@ -1493,7 +1522,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("복사 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
-            else if (SignalCopyOrMove_ == 2)
+            else if (_signalCopyOrMove == 2)
             {
                 Item item;
                 int result = Api.CNCFileMove(tmpCopyOrMove, tmpCurrentPath + fileName, out item, tmpMachineID, _userApiTimeout);
@@ -1501,7 +1530,7 @@ namespace TorusWPF
                 {
                     CheckForTest("CNCFileMove", true);
                     System.Windows.MessageBox.Show("이동 성공");
-                    SignalCopyOrMove_ = 0;
+                    _signalCopyOrMove = 0;
                     TextBoxCopyOrMove.Text = "";
                 }
                 else
@@ -1624,7 +1653,7 @@ namespace TorusWPF
         private void ButtonGetExecuteExtern_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -1773,13 +1802,13 @@ namespace TorusWPF
         private void ButtonGetPlc_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            if (cncVendorCode_ == 1) //Fanuc
+            if (_cncVendorCode == 1) //Fanuc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcFanucType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcFanucStart.Text.ToString();
@@ -1802,7 +1831,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("getPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
-            else if (cncVendorCode_ == 2) //Siemens
+            else if (_cncVendorCode == 2) //Siemens
             {
                 string tmpAddress = TextBoxPlcSiemensAddress.Text.ToString();
                 Item tmpItem;
@@ -1823,7 +1852,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("getPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
-            else if (cncVendorCode_ == 4 || cncVendorCode_ == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
+            else if (_cncVendorCode == 4 || _cncVendorCode == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcKcncType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcKcncStart.Text.ToString();
@@ -1856,13 +1885,13 @@ namespace TorusWPF
         private void ButtonSetPlc_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            if (cncVendorCode_ == 1) //Fanuc
+            if (_cncVendorCode == 1) //Fanuc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcFanucType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcFanucStart.Text.ToString();
@@ -1891,7 +1920,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("setPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
-            else if (cncVendorCode_ == 2) //Siemens
+            else if (_cncVendorCode == 2) //Siemens
             {
                 string tmpAddress = TextBoxPlcSiemensAddress.Text.ToString();
                 string inputData = TextBoxPlcSetData.Text;
@@ -1918,7 +1947,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("setPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
-            else if (cncVendorCode_ == 4 || cncVendorCode_ == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
+            else if (_cncVendorCode == 4 || _cncVendorCode == 5) //Mitsubishi(타입:16, 어드레스:A), Kcnc
             {
                 int tmpDataType = Convert.ToInt32(TextBoxPlcKcncType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcKcncStart.Text.ToString();
@@ -1994,45 +2023,45 @@ namespace TorusWPF
             int tmpResult = Api.getData("data://machine/cncvendor", "machine=" + tmpMachineID.ToString(), out item, true, _userApiTimeout);
             if (tmpResult == 0)
             {
-                cncVendorCode_ = item.GetValueInt("value");
+                _cncVendorCode = item.GetValueInt("value");
                 string tmpStr;
-                if (cncVendorCode_ == 1)
+                if (_cncVendorCode == 1)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (Fanuc)";
+                    tmpStr = _cncVendorCode.ToString() + " (Fanuc)";
                 }
-                else if (cncVendorCode_ == 2)
+                else if (_cncVendorCode == 2)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (Siemens)";
+                    tmpStr = _cncVendorCode.ToString() + " (Siemens)";
                 }
-                else if (cncVendorCode_ == 3)
+                else if (_cncVendorCode == 3)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (CSCAM)";
+                    tmpStr = _cncVendorCode.ToString() + " (CSCAM)";
                 }
-                else if (cncVendorCode_ == 4)
+                else if (_cncVendorCode == 4)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (Mitsubishi)";
+                    tmpStr = _cncVendorCode.ToString() + " (Mitsubishi)";
                 }
-                else if (cncVendorCode_ == 5)
+                else if (_cncVendorCode == 5)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (KCNC)";
+                    tmpStr = _cncVendorCode.ToString() + " (KCNC)";
                 }
-                else if (cncVendorCode_ == 6)
+                else if (_cncVendorCode == 6)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (MAZAK)";
+                    tmpStr = _cncVendorCode.ToString() + " (MAZAK)";
                 }
-                else if (cncVendorCode_ == 7)
+                else if (_cncVendorCode == 7)
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (Heidenhain)";
+                    tmpStr = _cncVendorCode.ToString() + " (Heidenhain)";
                 }
                 else
                 {
-                    tmpStr = cncVendorCode_.ToString() + " (UNKNOWN)";
+                    tmpStr = _cncVendorCode.ToString() + " (UNKNOWN)";
                 }
                 TextBlockVendorCode.Text = "VendorCode : " + tmpStr;
             }
             else
             {
-                cncVendorCode_ = 0;
+                _cncVendorCode = 0;
                 TextBlockVendorCode.Text = "VendorCode : 0 (오류)";
             }
             tmpResult = Api.getData("data://machine/ncmemory/rootpath", "machine=" + tmpMachineID, out item, true, _userApiTimeout);
@@ -2046,7 +2075,7 @@ namespace TorusWPF
                 TextBoxCurrentPath.Text = "";
                 ListBoxFileList.Items.Clear();
             }
-            SignalCopyOrMove_ = 0;
+            _signalCopyOrMove = 0;
             TextBoxCopyOrMove.Text = "";
         }
 
@@ -2058,45 +2087,45 @@ namespace TorusWPF
             int tmpResult = Api.getData("data://machine/cncvendor", "machine=" + tmpMachineID.ToString(), out item, true, _userApiTimeout);
             if (tmpResult == 0)
             {
-                timeseriesVendorCode_ = item.GetValueInt("value");
+                _timeseriesVendorCode = item.GetValueInt("value");
                 string tmpStr;
-                if (timeseriesVendorCode_ == 1)
+                if (_timeseriesVendorCode == 1)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (Fanuc)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (Fanuc)";
                 }
-                else if (timeseriesVendorCode_ == 2)
+                else if (_timeseriesVendorCode == 2)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (Siemens)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (Siemens)";
                 }
-                else if (timeseriesVendorCode_ == 3)
+                else if (_timeseriesVendorCode == 3)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (CSCAM)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (CSCAM)";
                 }
-                else if (timeseriesVendorCode_ == 4)
+                else if (_timeseriesVendorCode == 4)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (Mitsubishi)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (Mitsubishi)";
                 }
-                else if (timeseriesVendorCode_ == 5)
+                else if (_timeseriesVendorCode == 5)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (KCNC)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (KCNC)";
                 }
-                else if (timeseriesVendorCode_ == 6)
+                else if (_timeseriesVendorCode == 6)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (MAZAK)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (MAZAK)";
                 }
-                else if (timeseriesVendorCode_ == 7)
+                else if (_timeseriesVendorCode == 7)
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (Heidenhain)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (Heidenhain)";
                 }
                 else
                 {
-                    tmpStr = timeseriesVendorCode_.ToString() + " (UNKNOWN)";
+                    tmpStr = _timeseriesVendorCode.ToString() + " (UNKNOWN)";
                 }
                 TextBlockTimeSeriesVendorCode.Text = "VendorCode : " + tmpStr;
             }
             else
             {
-                timeseriesVendorCode_ = 0;
+                _timeseriesVendorCode = 0;
                 TextBlockTimeSeriesVendorCode.Text = "VendorCode : 0 (오류)";
             }
             InitTimeseries();
@@ -2105,7 +2134,7 @@ namespace TorusWPF
         private void ButtonGetGmodal_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -2143,7 +2172,7 @@ namespace TorusWPF
         private void ButtonGetExModal_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -2182,7 +2211,7 @@ namespace TorusWPF
         private void ButtonGetToolOffset_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -2198,7 +2227,7 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("채널을 확인하시기 바랍니다.");
                 return;
             }
-            if (cncVendorCode_ == 1 || cncVendorCode_ == 4 || cncVendorCode_ == 5) //Fanuc, Mitsubishi, KCNC
+            if (_cncVendorCode == 1 || _cncVendorCode == 4 || _cncVendorCode == 5) //Fanuc, Mitsubishi, KCNC
             {
                 string tmpType = TextBoxToolOffsetType.Text.ToString();
                 string tmpNumber = TextBoxToolOffsetNumber.Text.ToString();
@@ -2231,7 +2260,7 @@ namespace TorusWPF
         private void ButtonSetToolOffset_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -2247,7 +2276,7 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("채널을 확인하시기 바랍니다.");
                 return;
             }
-            if (cncVendorCode_ == 1 || cncVendorCode_ == 4 || cncVendorCode_ == 5) //Fanuc, Mitsubishi, KCNC
+            if (_cncVendorCode == 1 || _cncVendorCode == 4 || _cncVendorCode == 5) //Fanuc, Mitsubishi, KCNC
             {
                 string tmpType = TextBoxToolOffsetType.Text;
                 string tmpNumber = TextBoxToolOffsetNumber.Text;
@@ -2291,7 +2320,7 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("경로를 확인하시기 바랍니다.");
                 return;
             }
-            SignalCopyOrMove_ = 1;
+            _signalCopyOrMove = 1;
             TextBoxCopyOrMove.Text = tmpCurrentPath + _objectName;
         }
 
@@ -2303,7 +2332,7 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("경로를 확인하시기 바랍니다.");
                 return;
             }
-            SignalCopyOrMove_ = 2;
+            _signalCopyOrMove = 2;
             TextBoxCopyOrMove.Text = tmpCurrentPath + _objectName;
         }
 
@@ -2333,9 +2362,9 @@ namespace TorusWPF
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            if (addressFilePath_ != "")
+            if (_addressFilePath != "")
             {
-                SaveAddressFile(addressFilePath_);
+                SaveAddressFile(_addressFilePath);
             }
             else
             {
@@ -2384,7 +2413,7 @@ namespace TorusWPF
                 tmpsaveContents = tmpsaveContents + (ListBoxMachineState.Items[i] as MachineState).address + "\t" + (ListBoxMachineState.Items[i] as MachineState).filter + "\t" + (ListBoxMachineState.Items[i] as MachineState).TextBoxMemo.Text + "\n";
             }
             File.WriteAllText(_addressFilePath, tmpsaveContents);
-            addressFilePath_ = _addressFilePath;
+            this._addressFilePath = _addressFilePath;
             TextBlockAddressFilePath.Text = _addressFilePath;
             System.Windows.MessageBox.Show("저장완료", "성공");
             return 0;
@@ -2401,9 +2430,12 @@ namespace TorusWPF
             if (result == MessageBoxResult.OK)
             {
                 ListBoxMachineState.Items.RemoveAt(_index);
-                MachineState.totalCount = ListBoxMachineState.Items.Count;
-                TextBlockMom.Text = ListBoxMachineState.Items.Count.ToString();
-                for (int i = 0; i < ListBoxMachineState.Items.Count; i++)
+                int count = ListBoxMachineState.Items.Count;
+                MachineState.totalCount = count;
+                TextBlockSingleAll.Text = count.ToString();
+                TextBlockSinglePassedAll.Text = count.ToString();
+                TextBlockMultiAll.Text = count.ToString();
+                for (int i = 0; i < count; i++)
                 {
                     (ListBoxMachineState.Items[i] as MachineState).InsertNumber(i + 1);
                 }
@@ -2523,7 +2555,7 @@ namespace TorusWPF
 
         private void ButtonInsertNewMachineState_Click(object sender, RoutedEventArgs e)
         {
-            if (connectResult_ == 0 && ButtonMultiStart.IsEnabled == false)
+            if (_connectResult == 0 && ButtonMultiStart.IsEnabled == false)
             {
                 System.Windows.MessageBox.Show("작업중에는 불가능합니다.", "오류");
                 return;
@@ -2534,9 +2566,12 @@ namespace TorusWPF
                 tmpIndex = 0;
             }
             ListBoxMachineState.Items.Insert(tmpIndex, new MachineState("", "", ""));
-            MachineState.totalCount = ListBoxMachineState.Items.Count;
-            TextBlockMom.Text = ListBoxMachineState.Items.Count.ToString();
-            for (int i = 0; i < ListBoxMachineState.Items.Count; i++)
+            int count = ListBoxMachineState.Items.Count;
+            MachineState.totalCount = count;
+            TextBlockSingleAll.Text = count.ToString();
+            TextBlockSinglePassedAll.Text = count.ToString();
+            TextBlockMultiAll.Text = count.ToString();
+            for (int i = 0; i < count; i++)
             {
                 (ListBoxMachineState.Items[i] as MachineState).InsertNumber(i + 1);
             }
@@ -2584,24 +2619,24 @@ namespace TorusWPF
             TextBoxCommonFilter.IsReadOnly = true;
             ButtonMultiStart.IsEnabled = false;
             ButtonLoad.IsEnabled = false;
-            commonFilter_ = TextBoxCommonFilter.Text.Trim();
-            if (commonFilter_ != "")
+            _commonFilter = TextBoxCommonFilter.Text.Trim();
+            if (_commonFilter != "")
             {
-                if (commonFilter_.Substring(commonFilter_.Length - 1, 1) == "&")
+                if (_commonFilter.Substring(_commonFilter.Length - 1, 1) == "&")
                 {
-                    commonFilter_ = commonFilter_.Substring(0, commonFilter_.Length - 1);
+                    _commonFilter = _commonFilter.Substring(0, _commonFilter.Length - 1);
                 }
-                if (commonFilter_.Substring(0, 1) == "&")
+                if (_commonFilter.Substring(0, 1) == "&")
                 {
-                    commonFilter_ = commonFilter_.Substring(1, commonFilter_.Length);
+                    _commonFilter = _commonFilter.Substring(1, _commonFilter.Length);
                 }
             }
-            threadMultistopFlag_ = false;
-            threadMulti_ = new Thread(() => ThreadMulti(check))
+            _threadMultistopFlag = false;
+            _threadMulti = new Thread(() => ThreadMulti(check))
             {
                 IsBackground = true
             };
-            threadMulti_.Start();
+            _threadMulti.Start();
             ButtonMultiStop.IsEnabled = true;
         }
 
@@ -2612,6 +2647,8 @@ namespace TorusWPF
             bool tmpCountCheck = true;
             _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
             {
+                TextBlockMultiPercent.Text = "%";
+                TextBlockMultiSuccess.Text = "0";
                 TextBoxMultiThreadResult.Text = "";
                 TextBlockMultiGetDataCurrentCount.Text = "0";
             }));
@@ -2638,8 +2675,15 @@ namespace TorusWPF
                 tmpCountCheck = false;
             }
             int timeLineCount = 0;
-            while (!threadMultistopFlag_)
+            double successCount = 0;
+            double tmpAllCount = 0; ;
+            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
             {
+                tmpAllCount = Convert.ToInt32(TextBlockMultiAll.Text);
+            }));
+            while (!_threadMultistopFlag)
+            {
+                successCount = 0;
                 tmpOneTurnTime = 0;
                 int tmpTotalCount = ListBoxMachineState.Items.Count;
                 Stopwatch stopwatch = new();
@@ -2650,20 +2694,20 @@ namespace TorusWPF
                 {
                     string tmpAddress = (ListBoxMachineState.Items[i] as MachineState).address;
                     string tmpFilter = (ListBoxMachineState.Items[i] as MachineState).filter;
-                    if (commonFilter_ != "")
+                    if (_commonFilter != "")
                     {
                         if (tmpFilter != "")
                         {
-                            tmpFilter = commonFilter_ + "&" + tmpFilter;
+                            tmpFilter = _commonFilter + "&" + tmpFilter;
                         }
                         else
                         {
-                            tmpFilter = commonFilter_;
+                            tmpFilter = _commonFilter;
                         }
                     }
                     addressArray[i] = tmpAddress;
                     filter_Array[i] = tmpFilter;
-                    if (threadMultistopFlag_)
+                    if (_threadMultistopFlag)
                     {
                         break;
                     }
@@ -2672,72 +2716,81 @@ namespace TorusWPF
                 int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, _multiDirect, _timeout);
                 stopwatch.Stop();
                 //Multi의 경우 하나만 오류가 발생해도 함수 실행 결과가 오류로 표시됩니다. itemArray의 "status"의 값이 0이 아니라면 오류입니다.
-                if (tmpResult == 558891055)
+                lock (_lock)
                 {
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
-                    for (int i = 0; i < tmpTotalCount; i++)
+                    if (tmpResult == 558891055)
                     {
-                        _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                        string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                        for (int i = 0; i < tmpTotalCount; i++)
                         {
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
-                            (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
-                            (ListBoxMachineState.Items[i] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-                        }));
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < tmpTotalCount; i++)
-                    {
-                        if (true)//테스트 코드
-                        {
-                            if (itemArray[i] == null)
-                            {
-                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                                {
-                                    MessageBox.Show("null 반환 발생", "Multi 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                                }));
-                                Debug.WriteLine("null 반환 발생");
-                            }
-                            string returnAddress = itemArray[i].GetValueString("address");
-                            string returnFilter = itemArray[i].GetValueString("filter");
-                            if (!string.Equals(addressArray[i], returnAddress, StringComparison.OrdinalIgnoreCase) || !string.Equals(filter_Array[i], returnFilter, StringComparison.OrdinalIgnoreCase))
-                            {
-                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                                {
-                                    MessageBox.Show("불일치 발생\n" + addressArray[i] + "\n" +
-                                        returnAddress + "\n" + filter_Array[i] + "\n" + returnFilter, "Multi 오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                                }));
-                                Debug.WriteLine("불일치 발생\n" + addressArray[i] + "\n" + returnAddress + "\n" + filter_Array[i] + "\n" + returnFilter);
-                            }
-                        }
-                        int status = itemArray[i].GetValueInt("status");
-                        if (status == 0)
-                        {
-                            _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
-                            {
-                                (ListBoxMachineState.Items[i] as MachineState).InsertResult(itemArray[i].ToString());
-                                (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(itemArray[i]));
-                                (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
-                                (ListBoxMachineState.Items[i] as MachineState).InsertTime("성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
-                            }));
-                        }
-                        else
-                        {
-                            string tmpErrorCode = MakeErrorMessage(status, out string tmpErrorMessage);
                             _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
                             {
                                 (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
                                 (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
                                 (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
-                                (ListBoxMachineState.Items[i] as MachineState).InsertTime("실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                                (ListBoxMachineState.Items[i] as MachineState).InsertMultiTime("Multi 실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
                             }));
                         }
                     }
+                    else
+                    {
+                        for (int i = 0; i < tmpTotalCount; i++)
+                        {
+                            if (true)//테스트 코드
+                            {
+                                if (itemArray[i] == null)
+                                {
+                                    _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                    {
+                                        MessageBox.Show("null 반환 발생", "Multi 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }));
+                                    Debug.WriteLine("null 반환 발생");
+                                }
+                                string returnAddress = itemArray[i].GetValueString("address");
+                                string returnFilter = itemArray[i].GetValueString("filter");
+                                if (!string.Equals(addressArray[i], returnAddress, StringComparison.OrdinalIgnoreCase) || !string.Equals(filter_Array[i], returnFilter, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                    {
+                                        MessageBox.Show("불일치 발생\n" + addressArray[i] + "\n" +
+                                            returnAddress + "\n" + filter_Array[i] + "\n" + returnFilter, "Multi 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }));
+                                    Debug.WriteLine("불일치 발생\n" + addressArray[i] + "\n" + returnAddress + "\n" + filter_Array[i] + "\n" + returnFilter);
+                                }
+                            }
+                            int status = itemArray[i].GetValueInt("status");
+                            if (status == 0)
+                            {
+                                successCount++;
+                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                {
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertResult(itemArray[i].ToString());
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(MakeSuccessMessage(itemArray[i]));
+                                    (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(100, 103, 153, 255);
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertMultiTime("Multi 성공: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                                }));
+                            }
+                            else
+                            {
+                                string tmpErrorCode = MakeErrorMessage(status, out string tmpErrorMessage);
+                                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                                {
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertResult(tmpErrorCode);
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertResultDescribe(tmpErrorMessage);
+                                    (ListBoxMachineState.Items[i] as MachineState).DrawColorMan(30, 255, 100, 100);
+                                    (ListBoxMachineState.Items[i] as MachineState).InsertMultiTime("Multi 실패: " + stopwatch.ElapsedMilliseconds.ToString() + "ms");
+                                }));
+                            }
+                        }
+                    }
                 }
-
+                Thread.Sleep(10);
                 tmpOneTurnTime = stopwatch.ElapsedMilliseconds;
+                _ = System.Windows.Application.Current.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(delegate
+                {
+                    TextBlockMultiSuccess.Text = successCount.ToString();
+                    TextBlockMultiPercent.Text = (successCount / tmpAllCount * 100).ToString("0.##") + "%";
+                }));
                 if (tmpCountCheck == true)
                 {
                     tmpTotalTime = tmpTotalTime + tmpOneTurnTime;
@@ -2749,7 +2802,7 @@ namespace TorusWPF
                     }));
                     if (tmpGetDataCurrentCount >= tmpGetDataTargetCount)
                     {
-                        threadMultistopFlag_ = true;
+                        _threadMultistopFlag = true;
                     }
                 }
                 else
@@ -2810,13 +2863,13 @@ namespace TorusWPF
         private void ButtonGudGet_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            if (cncVendorCode_ == 2) //Siemens
+            if (_cncVendorCode == 2) //Siemens
             {
                 int tmpResult = -1;
                 Item tmpItem;
@@ -2865,13 +2918,13 @@ namespace TorusWPF
         private void ButtonGudSet_Click(object sender, RoutedEventArgs e)
         {
             SetTimeout();
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            if (cncVendorCode_ == 2) //Siemens
+            if (_cncVendorCode == 2) //Siemens
             {
                 int tmpResult = -1;
                 Item tmpItem;
@@ -3055,7 +3108,7 @@ namespace TorusWPF
             }
             else if (sender == ButtonSingleStop)
             {
-                threadSignlestopFlag_ = true;
+                _threadSignlestopFlag = true;
             }
             else if (sender == ButtonMultiStart)
             {
@@ -3063,7 +3116,7 @@ namespace TorusWPF
             }
             else if (sender == ButtonMultiStop)
             {
-                threadMultistopFlag_ = true;
+                _threadMultistopFlag = true;
             }
             else if (sender == ButtonSearch)
             {
@@ -3139,7 +3192,7 @@ namespace TorusWPF
         private void MakeMachineMonitoringList()
         {
             ListBoxMachineMonitoringList.Items.Clear();
-            foreach (MachineObject machine in connectedMachineList_)
+            foreach (MachineObject machine in _connectedMachineList)
             {
                 ListBoxMachineMonitoringList.Items.Add(new MachineMonitoringItem(machine));
             }
@@ -3161,7 +3214,7 @@ namespace TorusWPF
 
         private void ComboBoxTimeSeries_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (OffChanged_)
+            if (_OffChanged)
             {
                 return;
             }
@@ -3242,14 +3295,14 @@ namespace TorusWPF
 
         private void InitTimeseries()
         {
-            OffChanged_ = true;
+            _OffChanged = true;
             ComboBoxTimeSeriesStatus.Items.Clear();
             ComboBoxTimeSeriesMode.Items.Clear();
             ComboBoxTimeSeriesFrequency.Items.Clear();
             ComboBoxTimeSeriesCategory.Items.Clear();
             TextBoxTimeSeriesPeriod.Text = "";
             TextBoxTimeSeriesSubCategory.Text = "";
-            if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5)//1=Fanuc, 2=KCNC
+            if (_timeseriesVendorCode != 1 && _timeseriesVendorCode != 5)//1=Fanuc, 2=KCNC
             {
                 ComboBoxTimeSeriesMachieID.IsEnabled = false;
                 ComboBoxTimeSeriesStatus.IsEnabled = false;
@@ -3275,12 +3328,12 @@ namespace TorusWPF
             ComboBoxTimeSeriesStatus.Items.Add("-2:설정값 적용 실패");
             ComboBoxTimeSeriesMode.Items.Add("0:반복수집");
             ComboBoxTimeSeriesMode.Items.Add("1:1회수집");
-            if (timeseriesVendorCode_ == 1)
+            if (_timeseriesVendorCode == 1)
             {
                 ComboBoxTimeSeriesMode.Items.Add("2:반복수집(저밀도)");
             }
             ComboBoxTimeSeriesFrequency.Items.Add("1000:1KHz");
-            if (timeseriesVendorCode_ == 1)
+            if (_timeseriesVendorCode == 1)
             {
                 ComboBoxTimeSeriesCategory.Items.Add("0:Axis-POSF,Spindle-CSPOS");
                 ComboBoxTimeSeriesCategory.Items.Add("1:Axis-ERR,Spindle-SPEED");
@@ -3330,7 +3383,7 @@ namespace TorusWPF
                 ComboBoxTimeSeriesCategory.Items.Add("45:Axis-ALGOFS");
                 ComboBoxTimeSeriesCategory.Items.Add("46:Axis-ALGOF2");
             }
-            else if (timeseriesVendorCode_ == 5)
+            else if (_timeseriesVendorCode == 5)
             {
                 ComboBoxTimeSeriesCategory.Items.Add("1:상태정보 X");
                 ComboBoxTimeSeriesCategory.Items.Add("2:상태정보 Y");
@@ -3346,12 +3399,12 @@ namespace TorusWPF
                 ComboBoxTimeSeriesCategory.Items.Add("12:상태정보 MS");
             }
             GetTimeseriesSettingvalue();
-            OffChanged_ = false;
+            _OffChanged = false;
         }
 
         private void GetTimeseriesSettingvalue()
         {
-            OffChanged_ = true;
+            _OffChanged = true;
             int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
             int tmpTotalCount = 15;
             string[] addressArray = new string[tmpTotalCount];
@@ -3475,11 +3528,11 @@ namespace TorusWPF
                         {
 
                             int value = itemArray[i].GetValueInt("value");
-                            if (timeseriesVendorCode_ == 1)
+                            if (_timeseriesVendorCode == 1)
                             {
                                 ComboBoxTimeSeriesCategory.SelectedIndex = value;
                             }
-                            else if (timeseriesVendorCode_ == 5)
+                            else if (_timeseriesVendorCode == 5)
                             {
                                 ComboBoxTimeSeriesCategory.SelectedIndex = value - 1;
                             }
@@ -3492,7 +3545,7 @@ namespace TorusWPF
                     }
                 }
             }
-            OffChanged_ = false;
+            _OffChanged = false;
         }
 
         private void ButtonTimeSeries_Click(object sender, RoutedEventArgs e)
@@ -3543,7 +3596,7 @@ namespace TorusWPF
 
         private void ButtonTimeseriesStart_Click(object sender, RoutedEventArgs e)
         {
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -3560,7 +3613,7 @@ namespace TorusWPF
             {
                 tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
                 {
-                    if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    if (_timeseriesVendorCode != 1 && _timeseriesVendorCode != 5) //Fanuc(1) //Kcnc(5)
                     {
                         System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
                         return;
@@ -3572,10 +3625,10 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("MachineID를 확인하십시오", "오류");
                 return;
             }
-            if (isTimeSeriesCallbackRegistered_ == false)
+            if (_isTimeSeriesCallbackRegistered == false)
             {
                 Api.regist_callback((int)CALLBACK_TYPE.ON_TIMESERIESDATA, OnTimeseriesBufferData); //콜백함수를 등록합니다. 앱을 실행하는 동안 딱 한번만 등록하면 됩니다.
-                isTimeSeriesCallbackRegistered_ = true;
+                _isTimeSeriesCallbackRegistered = true;
             }
             SetTimeout();
             int tmpResult = Api.startTimeSeries(bufferIndex, tmpMachineID, _userApiTimeout);
@@ -3599,7 +3652,7 @@ namespace TorusWPF
                 int currentStatusValue = statusValue;
                 Task.Run(() =>
                 {
-                    OffChanged_ = true;
+                    _OffChanged = true;
                     while (true)
                     {
                         Thread.Sleep(1000);
@@ -3633,7 +3686,7 @@ namespace TorusWPF
                             }
                         }
                     }
-                    OffChanged_ = false;
+                    _OffChanged = false;
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
                         GetTimeseriesSettingvalue();
@@ -3649,7 +3702,7 @@ namespace TorusWPF
 
         private void ButtonTimeseriesStop_Click(object sender, RoutedEventArgs e)
         {
-            if (connectResult_ != 0)
+            if (_connectResult != 0)
             {
                 System.Windows.MessageBox.Show("TORUS에 접속되어 있지 않습니다.", "오류");
                 return;
@@ -3660,7 +3713,7 @@ namespace TorusWPF
             {
                 tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
                 {
-                    if (timeseriesVendorCode_ != 1 && timeseriesVendorCode_ != 5) //Fanuc(1) //Kcnc(5)
+                    if (_timeseriesVendorCode != 1 && _timeseriesVendorCode != 5) //Fanuc(1) //Kcnc(5)
                     {
                         System.Windows.MessageBox.Show("TORUS는 해당 Vendor에서의 Timeseries를 지원하지 않습니다.", "오류");
                         return;
@@ -3674,12 +3727,12 @@ namespace TorusWPF
             {
                 CheckForTest("endTimeSeries", true);
                 TextBlockTimeseries.Text = "Api.endTimeSeries 성공";
-                if (isTimeSeriesCallbackRegistered_ == false)
+                if (_isTimeSeriesCallbackRegistered == false)
                 {
                     Task.Run(() =>
                     {
                         int currentStatusValue = statusValue;
-                        OffChanged_ = true;
+                        _OffChanged = true;
                         while (true)
                         {
                             Thread.Sleep(1000);
@@ -3712,7 +3765,7 @@ namespace TorusWPF
                                 }
                             }
                         }
-                        OffChanged_ = false;
+                        _OffChanged = false;
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
                             GetTimeseriesSettingvalue();

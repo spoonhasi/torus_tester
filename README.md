@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.14
+- 싱글, 멀티의 실행결과 개별 표시
+
 v2.3.13
 - 싱글, 멀티를 동시에 개별 실행할 수 있도록 수정
 

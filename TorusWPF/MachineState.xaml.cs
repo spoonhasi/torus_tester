@@ -27,12 +27,14 @@ namespace TorusWPF
         public string result;
         public string resultDescribe;
         public int number;
-        public int timeLineCount;
+        private int _singleTimeLineCount;
+        private int _multiTimeLineCount;
         public MachineState(string _address, string _filter, string _memo)
         {
             InitializeComponent();
             totalCount++;
-            timeLineCount = 0;
+            _singleTimeLineCount = 0;
+            _multiTimeLineCount = 0;
             address = _address;
             filter = _filter;
             result = "";
@@ -56,22 +58,40 @@ namespace TorusWPF
             return address.ToLowerInvariant();
         }
 
-        public void InsertTime(string _contents)
+        public void InsertSingleTime(string _contents)
         {
-            if(timeLineCount >= 5)
+            if(_singleTimeLineCount >= 5)
             {
-                string tmpString = TextBoxTime.Text;
+                string tmpString = TextBoxSingleTime.Text;
                 if (tmpString.Substring(tmpString.Length - 1) == "\n")
                 {
                     tmpString = tmpString.Substring(0, tmpString.Length - 1);
                 }
                 tmpString = tmpString.Substring(0, tmpString.LastIndexOf('\n'));
-                TextBoxTime.Text = _contents + "\n" + tmpString;
+                TextBoxSingleTime.Text = _contents + "\n" + tmpString;
             }
             else
             {
-                TextBoxTime.Text = _contents + "\n" + TextBoxTime.Text;
-                timeLineCount++;
+                TextBoxSingleTime.Text = _contents + "\n" + TextBoxSingleTime.Text;
+                _singleTimeLineCount++;
+            }
+        }
+        public void InsertMultiTime(string _contents)
+        {
+            if (_multiTimeLineCount >= 5)
+            {
+                string tmpString = TextBoxMultiTime.Text;
+                if (tmpString.Substring(tmpString.Length - 1) == "\n")
+                {
+                    tmpString = tmpString.Substring(0, tmpString.Length - 1);
+                }
+                tmpString = tmpString.Substring(0, tmpString.LastIndexOf('\n'));
+                TextBoxMultiTime.Text = _contents + "\n" + tmpString;
+            }
+            else
+            {
+                TextBoxMultiTime.Text = _contents + "\n" + TextBoxMultiTime.Text;
+                _multiTimeLineCount++;
             }
         }
         public void InsertNumber(int _number)

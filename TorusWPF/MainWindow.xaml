@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.13" Height="920" Width="1880">
+        Title="TorusTester C# v2.3.14" Height="920" Width="1880">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="810"></ColumnDefinition>
@@ -23,16 +23,12 @@
                     <Button x:Name="ButtonConnectWith" Content="Connect With Map File" HorizontalAlignment="Left" Margin="150,20,0,0" VerticalAlignment="Top" Width="130" Height="30" FontSize="11" Click="ButtonConnectWith_Click"/>
                     <Button x:Name="ButtonEtc" Content="TEST" HorizontalAlignment="Left" Margin="640,20,0,0" VerticalAlignment="Top" Width="90" Height="30" Click="ButtonEtc_Click" Visibility="Hidden"/>
                     <Grid Height="60" Width="130" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,60,0,0">
-                        <TextBlock x:Name="TextBlockGetDataSon" HorizontalAlignment="Right" Margin="0,0,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock HorizontalAlignment="Left" Margin="25,0,0,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockGetDataMom" HorizontalAlignment="Right" Margin="0,0,75,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockGetDataPercent" Margin="0,0,10,0" Text="%" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                        <TextBlock x:Name="TextBlockMissionSon" HorizontalAlignment="Right" Margin="0,20,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockMissionSuccess" HorizontalAlignment="Right" Margin="0,20,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
                         <TextBlock HorizontalAlignment="Left" Margin="25,20,0,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockMissionMom" HorizontalAlignment="Right" Margin="0,20,75,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockTotalSon" HorizontalAlignment="Right" Margin="0,40,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockMissionAll" HorizontalAlignment="Right" Margin="0,20,75,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockTotalSuccess" HorizontalAlignment="Right" Margin="0,40,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
                         <TextBlock HorizontalAlignment="Left" Margin="25,40,0,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockTotalMom" HorizontalAlignment="Right" Margin="0,40,75,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockTotalAll" HorizontalAlignment="Right" Margin="0,40,75,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
                         <TextBlock x:Name="TextBlockTotalPercent" Margin="0,40,10,0" Text="%" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                     </Grid>
                     <Button x:Name="ButtonSingleStart" Content="Single Start" HorizontalAlignment="left" Margin="150,60,0,0" VerticalAlignment="Top" Width="90" Height="25" Click="Button_Click"/>
@@ -44,16 +40,24 @@
                     <TextBlock HorizontalAlignment="Left" Margin="340,100,0,0" Text="Multi Direct =" TextWrapping="Wrap" VerticalAlignment="Top"/>
                     <ComboBox x:Name="ComboBoxMultiDirect" HorizontalAlignment="Left" Margin="430,98,0,0" VerticalAlignment="Top" Width="125" Height="20" SelectionChanged="ComboBox_SelectionChanged"/>
                     <TextBlock HorizontalAlignment="Left" Margin="600,52,0,0" FontSize="8" Text="실행횟수 (0 입력시, 무한 반복)" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                    <Grid Width="290" Height="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="440,60,0,0">
-                        <TextBlock x:Name="TextBlockSingleGetDataCurrentCount" Margin="0,4,145,0" Text="0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                        <TextBlock HorizontalAlignment="Right" Margin="0,4,135,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBox x:Name="TextBoxSingleGetDataTargetCount" HorizontalAlignment="Right" Margin="0,4,90,0" Text="0" TextWrapping="Wrap" TextAlignment="Right" VerticalAlignment="Top" Width="40"/>
-                        <TextBlock x:Name="TextBlockSon" HorizontalAlignment="Right" Margin="0,4,35,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock HorizontalAlignment="Right" Margin="0,4,25,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockMom" HorizontalAlignment="Right" Margin="0,4,00,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBlock x:Name="TextBlockMultiGetDataCurrentCount" Margin="0,39,145,0" Text="0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                        <TextBlock HorizontalAlignment="Right" Margin="0,39,135,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                        <TextBox x:Name="TextBoxMultiGetDataTargetCount" HorizontalAlignment="Right" Margin="0,39,90,0" Text="0" TextWrapping="Wrap" TextAlignment="Right" VerticalAlignment="Top" Width="40"/>
+                    <Grid Width="350" Height="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="440,60,0,0">
+                        <TextBlock x:Name="TextBlockSingleGetDataCurrentCount" Margin="0,4,205,0" Text="0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                        <TextBlock HorizontalAlignment="Right" Margin="0,4,195,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBox x:Name="TextBoxSingleGetDataTargetCount" HorizontalAlignment="Right" Margin="0,4,150,0" Text="0" TextWrapping="Wrap" TextAlignment="Right" VerticalAlignment="Top" Width="40"/>
+                        <TextBlock x:Name="TextBlockSingleSuccess" HorizontalAlignment="Right" Margin="0,4,115,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock HorizontalAlignment="Right" Margin="0,4,105,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockSingleAll" HorizontalAlignment="Right" Margin="0,4,80,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockSinglePercent" Margin="0,4,0,0" Text="%" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="TextBlockSinglePassed" HorizontalAlignment="Right" Margin="0,17,115,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock HorizontalAlignment="Right" Margin="0,17,105,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockSinglePassedAll" HorizontalAlignment="Right" Margin="0,17,80,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockMultiGetDataCurrentCount" Margin="0,39,205,0" Text="0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                        <TextBlock HorizontalAlignment="Right" Margin="0,39,195,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBox x:Name="TextBoxMultiGetDataTargetCount" HorizontalAlignment="Right" Margin="0,39,150,0" Text="0" TextWrapping="Wrap" TextAlignment="Right" VerticalAlignment="Top" Width="40"/>
+                        <TextBlock x:Name="TextBlockMultiSuccess" HorizontalAlignment="Right" Margin="0,39,115,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock HorizontalAlignment="Right" Margin="0,39,105,0" Text="/" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockMultiAll" HorizontalAlignment="Right" Margin="0,39,80,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                        <TextBlock x:Name="TextBlockMultiPercent" Margin="0,39,0,0" Text="%" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                     </Grid>
                     <Line X1="0" Y1="125" X2="585" Y2="125" StrokeThickness="2" Stroke="Black" StrokeDashArray="1"/>
                     <Line X1="585" Y1="125" X2="585" Y2="340" StrokeThickness="2" Stroke="Black" StrokeDashArray="1"/>

@@ -10,22 +10,29 @@
         <Grid x:Name="GridMain" Margin="0,0,0,0" Width="1000" Height="108">
             <Border BorderBrush="Black" BorderThickness="2">
             </Border>
-            <TextBox x:Name="TextBoxTime" Text="" TextWrapping="Wrap" HorizontalContentAlignment="Right" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,25,0,0" Width="80" Height="77" FontSize="11"/>
-            <Button x:Name="ButtonChangeAddress" Content="ChangeAddress" HorizontalAlignment="Left" Margin="100,5,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeAddress_Click"/>
-            <Button x:Name="ButtonChangeFilter" Content="ChangeFilter" HorizontalAlignment="Left" Margin="100,25,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonChangeFilter_Click"/>
-            <Button x:Name="ButtonOneGetData" Content="GetData" HorizontalAlignment="Left" Margin="100,45,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonOneGetData_Click"/>
-            <Button x:Name="ButtonUpdate" Content="UpdateData" HorizontalAlignment="Left" Margin="100,65,0,0" VerticalAlignment="Top" Width="95" Height="18" FontSize="10" Click="ButtonUpdate_Click"/>
-            <Button x:Name="ButtonDelete" Content="X" HorizontalAlignment="Right" Margin="0,5,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDelete_Click"/>
-            <Button x:Name="ButtonUp" Content="Up" HorizontalAlignment="Right" Margin="0,45,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonUp_Click"/>
-            <Button x:Name="ButtonDown" Content="Down" HorizontalAlignment="Right" Margin="0,65,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDown_Click"/>
             <TextBlock x:Name="TextBlockNumber" HorizontalAlignment="Left" Margin="10,5,0,0" Text="Number" TextWrapping="Wrap" VerticalAlignment="Top"/>
-            <TextBox x:Name="TextBoxAddress" HorizontalAlignment="Right" Margin="0,5,50,0" Text="Address" TextWrapping="Wrap" VerticalAlignment="Top" Width="750"/>
-            <TextBox x:Name="TextBoxFilter" HorizontalAlignment="Right" Margin="0,25,50,0" Text="Filter" TextWrapping="Wrap" VerticalAlignment="Top" Width="750"/>
-            <TextBox x:Name="TextBoxResult" HorizontalAlignment="Right" Margin="0,45,450,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="350"/>
-            <TextBox x:Name="TextBoxInputData" HorizontalAlignment="Right" Margin="0,65,450,0" Text="InputData" TextWrapping="NoWrap" VerticalAlignment="Top" Width="350"/>
-            <TextBox x:Name="TextBoxResultDescribe" HorizontalAlignment="Right" Margin="0,45,50,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="398" Height="38"/>
-            <TextBlock HorizontalAlignment="Left" Margin="130,85,0,0" Text="Memo" TextWrapping="Wrap" VerticalAlignment="Top"/>
-            <TextBox x:Name="TextBoxMemo" HorizontalAlignment="Right" Margin="0,85,50,0" Text="Memo" TextWrapping="NoWrap" VerticalAlignment="Top" Width="750"/>
+            <TextBox x:Name="TextBoxSingleTime" Text="" TextWrapping="Wrap" HorizontalContentAlignment="Right" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,25,0,0" Width="110" Height="77" FontSize="11"/>
+            <TextBox x:Name="TextBoxMultiTime" Text="" TextWrapping="Wrap" HorizontalContentAlignment="Right" IsReadOnly="True" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="125,25,0,0" Width="110" Height="77" FontSize="11"/>
+            <Grid Margin="240,0,0,0">
+                <Button x:Name="ButtonChangeAddress" Content="Address" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="70" Height="18" FontSize="10" Click="ButtonChangeAddress_Click"/>
+                <Button x:Name="ButtonChangeFilter" Content="Filter" HorizontalAlignment="Left" Margin="0,25,0,0" VerticalAlignment="Top" Width="70" Height="18" FontSize="10" Click="ButtonChangeFilter_Click"/>
+                <Button x:Name="ButtonOneGetData" Content="GetData" HorizontalAlignment="Left" Margin="0,45,0,0" VerticalAlignment="Top" Width="70" Height="18" FontSize="10" Click="ButtonOneGetData_Click"/>
+                <Button x:Name="ButtonUpdate" Content="UpdateData" HorizontalAlignment="Left" Margin="0,65,0,0" VerticalAlignment="Top" Width="70" Height="18" FontSize="10" Click="ButtonUpdate_Click"/>
+                <TextBlock HorizontalAlignment="Left" Margin="0,85,0,0" Text="    Memo" TextWrapping="Wrap" VerticalAlignment="Top" Width="70"/>
+            </Grid>
+            <Grid Margin="315,0,0,0">
+                <TextBox x:Name="TextBoxAddress" HorizontalAlignment="Left" Margin="0,5,0,0" Text="Address" TextWrapping="Wrap" VerticalAlignment="Top" Width="635"/>
+                <TextBox x:Name="TextBoxFilter" HorizontalAlignment="Left" Margin="0,25,0,0" Text="Filter" TextWrapping="Wrap" VerticalAlignment="Top" Width="635"/>
+                <TextBox x:Name="TextBoxResult" HorizontalAlignment="Left" Margin="0,45,0,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300"/>
+                <TextBox x:Name="TextBoxInputData" HorizontalAlignment="Left" Margin="0,65,0,0" Text="InputData" TextWrapping="NoWrap" VerticalAlignment="Top" Width="300"/>
+                <TextBox x:Name="TextBoxResultDescribe" HorizontalAlignment="Left" Margin="305,45,50,0" Text="Result" TextWrapping="NoWrap" VerticalAlignment="Top" Width="330" Height="38"/>
+                <TextBox x:Name="TextBoxMemo" HorizontalAlignment="Left" Margin="0,85,0,0" Text="Memo" TextWrapping="NoWrap" VerticalAlignment="Top" Width="635"/>
+            </Grid>
+            <Grid Margin="0,0,0,0" HorizontalAlignment="Right">
+                <Button x:Name="ButtonDelete" Content="X" HorizontalAlignment="Right" Margin="0,5,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDelete_Click"/>
+                <Button x:Name="ButtonUp" Content="Up" HorizontalAlignment="Right" Margin="0,45,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonUp_Click"/>
+                <Button x:Name="ButtonDown" Content="Down" HorizontalAlignment="Right" Margin="0,65,10,0" VerticalAlignment="Top" Width="35" Height="18" FontSize="10" Click="ButtonDown_Click"/>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>
