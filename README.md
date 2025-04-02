@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.13
+- 싱글, 멀티를 동시에 개별 실행할 수 있도록 수정
+
 v2.3.12
 - 오류코드 수정
 - 폴더 연결시의 용량추가3종세트를 싱글방식으로 변환

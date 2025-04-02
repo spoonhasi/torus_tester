@@ -26,9 +26,6 @@
     <Reference Include="ItemCS">
       <HintPath>..\Api\ItemCS.dll</HintPath>
     </Reference>
-    <Reference Include="TorusAddressMapping">
-      <HintPath>..\..\torus_tool\TorusAddressMapping\bin\Release\net8.0-windows\TorusAddressMapping.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
