@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.14" Height="920" Width="1880">
+        Title="TorusTester C# v2.3.15" Height="920" Width="1880">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="810"></ColumnDefinition>
@@ -269,7 +269,8 @@
                             <TextBox x:Name="TextBoxTimeSeriesPeriod" HorizontalAlignment="Left" Margin="430,40,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
                             <Button x:Name="ButtonTimeSeriesPeriod" Content="적용" HorizontalAlignment="Left" Margin="540,40,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
                             <TextBlock HorizontalAlignment="Left" Margin="310,70,0,0" Text="TimeSeries Frequency(Hz):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>
-                            <ComboBox x:Name="ComboBoxTimeSeriesFrequency" HorizontalAlignment="Left" Margin="430,70,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
+                            <TextBox x:Name="TextBoxTimeSeriesFrequency" HorizontalAlignment="Left" Margin="430,70,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
+                            <Button x:Name="ButtonTimeSeriesFrequency" Content="적용" HorizontalAlignment="Left" Margin="540,70,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
                             <TextBlock HorizontalAlignment="Left" Margin="610,40,0,0" Text="TimeSeries Category:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
                             <ComboBox x:Name="ComboBoxTimeSeriesCategory" HorizontalAlignment="Left" Margin="730,40,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
                             <TextBlock HorizontalAlignment="Left" Margin="610,70,0,0" Text="TimeSeries SubCategory:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>

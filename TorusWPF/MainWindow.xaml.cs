@@ -23,6 +23,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using ScottPlot;
 
 namespace TorusWPF
 {
@@ -32,6 +33,19 @@ namespace TorusWPF
         public const string AppID = "FAFC456B-FA41-40AD-B1EB-C3834076A1DC";
         public const string AppName = "TorusTester";
         public const string ConfigFileName = "config.ini";
+    }
+    public class TimeSeriesItem
+    {
+        public List<List<double>> value { get; set; }
+        public List<long> starttimestamp { get; set; }
+        public List<long> endtimestamp { get; set; }
+        public List<long> streamdatasizes { get; set; }
+        public long count { get; set; }
+        public long status { get; set; }
+        public string datatype { get; set; }
+        public string time { get; set; }
+        public string address { get; set; }
+        public string filter { get; set; }
     }
     public class MachineObject
     {
@@ -167,7 +181,8 @@ namespace TorusWPF
             ComboBoxTimeSeriesMode.IsEnabled = false;
             TextBoxTimeSeriesPeriod.IsEnabled = false;
             ButtonTimeSeriesPeriod.IsEnabled = false;
-            ComboBoxTimeSeriesFrequency.IsEnabled = false;
+            ButtonTimeSeriesFrequency.IsEnabled = false;
+            TextBoxTimeSeriesFrequency.IsEnabled = false;
             ComboBoxTimeSeriesCategory.IsEnabled = false;
             TextBoxTimeSeriesSubCategory.IsEnabled = false;
             ButtonTimeSeriesSubCategory.IsEnabled = false;
@@ -905,7 +920,8 @@ namespace TorusWPF
         public void UpdateData(int _index)
         {
             SetTimeout();
-            string inputData = (ListBoxMachineState.Items[_index] as MachineState).TextBoxInputData.Text;
+            string inputOriginalData = (ListBoxMachineState.Items[_index] as MachineState).TextBoxInputData.Text;
+            string inputData = inputOriginalData;
             if (inputData == "")
             {
                 return;
@@ -937,10 +953,36 @@ namespace TorusWPF
             InItem = Item.Parse(inputData);
             if (InItem == null)
             {
-                System.Windows.MessageBox.Show("잘못된 형식입니다.", "오류");
-                return;
-            }
+                string[] tokens = inputOriginalData.Split(',');
 
+                List<double> values = new List<double>();
+                foreach (string token in tokens)
+                {
+                    if (double.TryParse(token.Trim(), out double val))
+                    {
+                        values.Add(val);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show("잘못된 형식입니다.", "오류");
+                        return;
+                    }
+                }
+                if (values.Count > 0)
+                {
+                    InItem = Item.MakeItem("value", values.ToArray());
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show("잘못된 형식입니다.", "오류");
+                    return;
+                }
+                if (InItem == null)
+                {
+                    System.Windows.MessageBox.Show("잘못된 형식입니다.", "오류");
+                    return;
+                }
+            }
             int tmpResult = Api.updateData(tmpAddress, tmpFilter, InItem, out _, _timeout);
             if (tmpResult == 0)
             {
@@ -2986,37 +3028,58 @@ namespace TorusWPF
             }
         }
 
+        readonly Color[] colors =
+        [
+            Color.FromColor(System.Drawing.Color.Red),
+            Color.FromColor(System.Drawing.Color.Blue),
+            Color.FromColor(System.Drawing.Color.Green),
+            Color.FromColor(System.Drawing.Color.Orange),
+            Color.FromColor(System.Drawing.Color.Purple),
+            Color.FromColor(System.Drawing.Color.Teal),
+            Color.FromColor(System.Drawing.Color.Gray),
+            Color.FromColor(System.Drawing.Color.Yellow)
+        ];
+
         private int OnTimeseriesBufferData(EVENT_CODE evt, int cmd, Item command, ref Item result)
         {
             Item data = command.find("result");
-            List<Item> tempData = (List<Item>)data.GetValue();
-            Item tmpItem = tempData[0];
-            double[] dvals = tmpItem.GetArrayDouble("value");
-            double[] dataX = Enumerable.Range(1, dvals.Length).Select(x => (double)x).ToArray();
-            double[] dataY = dvals.Take(dvals.Length).Select(x => (double)x).ToArray();
+            string json = "{" + data.ToString() + "}";
+            using JsonDocument doc = JsonDocument.Parse(json);
+            JsonElement root = doc.RootElement;
+            JsonElement firstResult = root.GetProperty("result")[0];
+            TimeSeriesItem item = JsonSerializer.Deserialize<TimeSeriesItem>(firstResult.GetRawText());
+
+            //List<Item> tempData = (List<Item>)data.GetValue();
+            //Item tmpItem = tempData[0];
+            //double[] dvals = tmpItem.GetArrayDouble("value");
             ScootPlotTimeseries.Plot.Clear();
-            //ScootPlotTimeseries.Plot.Add.Scatter(dataX, dataY);
-            ScootPlotTimeseries.Plot.Add.ScatterPoints(dataX, dataY);
-            ScootPlotTimeseries.Plot.Axes.AutoScale();
+            for (int i = 0; i < item.count; i++)
+            {
+                double[] dvals = item.value[i].ToArray();
+                double[] dataX = Enumerable.Range(1, dvals.Length).Select(x => (double)x).ToArray();
+                double[] dataY = dvals.Take(dvals.Length).Select(x => (double)x).ToArray();
+                ScootPlotTimeseries.Plot.Add.ScatterPoints(dataX, dataY, color: colors[i]);
+                ScootPlotTimeseries.Plot.Axes.AutoScale();
+                if (dvals.Length >= 10)
+                {
+                    Debug.WriteLine("StartTimestamp: " + item.starttimestamp[i]);
+                    Debug.WriteLine("EndTimestamp: " + item.endtimestamp[i]);
+                    Debug.WriteLine("Size: " + item.streamdatasizes[i]);
+                    Debug.WriteLine("OnTimeseriesBufferData BufferCount: " + dvals.Length);
+                    Debug.WriteLine("OnTimeseriesBufferData Start1 Value: " + dvals[0]);
+                    Debug.WriteLine("OnTimeseriesBufferData Start2 Value: " + dvals[1]);
+                    Debug.WriteLine("OnTimeseriesBufferData Start3 Value: " + dvals[2]);
+                    Debug.WriteLine("OnTimeseriesBufferData End-3 Value: " + dvals[dvals.Length - 3]);
+                    Debug.WriteLine("OnTimeseriesBufferData End-2 Value: " + dvals[dvals.Length - 2]);
+                    Debug.WriteLine("OnTimeseriesBufferData End-1 Value: " + dvals[dvals.Length - 1]);
+                }
+            }
+
             System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                TextBlockTimeseries.Text = tmpItem.GetValueString("time");
+                //TextBlockTimeseries.Text = tmpItem.GetValueString("time");
                 ScootPlotTimeseries.Refresh();
             });
-            if (dvals.Length >= 10)
-            {
-                Debug.WriteLine("OnTimeseriesBufferData BufferCount: " + dvals.Length);
-                Debug.WriteLine("OnTimeseriesBufferData Start1 Value: " + dvals[0]);
-                Debug.WriteLine("OnTimeseriesBufferData Start2 Value: " + dvals[1]);
-                Debug.WriteLine("OnTimeseriesBufferData Start3 Value: " + dvals[2]);
-                Debug.WriteLine("OnTimeseriesBufferData Start4 Value: " + dvals[3]);
-                Debug.WriteLine("OnTimeseriesBufferData Start5 Value: " + dvals[4]);
-                Debug.WriteLine("OnTimeseriesBufferData End-5 Value: " + dvals[dvals.Length - 5]);
-                Debug.WriteLine("OnTimeseriesBufferData End-4 Value: " + dvals[dvals.Length - 4]);
-                Debug.WriteLine("OnTimeseriesBufferData End-3 Value: " + dvals[dvals.Length - 3]);
-                Debug.WriteLine("OnTimeseriesBufferData End-2 Value: " + dvals[dvals.Length - 2]);
-                Debug.WriteLine("OnTimeseriesBufferData End-1 Value: " + dvals[dvals.Length - 1]);
-            }
             return 0;
         }
 
@@ -3255,24 +3318,6 @@ namespace TorusWPF
                 }
                 GetTimeseriesSettingvalue();
             }
-            else if (sender == ComboBoxTimeSeriesFrequency)
-            {
-                int targetValue = GetMachineId(ComboBoxTimeSeriesFrequency.SelectedItem.ToString());
-                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
-                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
-                Item InItem = Item.Parse(inputData);
-                int tmpResult = Api.updateData("data://machine/buffer/stream/streamFrequency", "machine=" + tmpMachineID + "&buffer=1&stream=1", InItem, out _, _userApiTimeout);
-                if (tmpResult == 0)
-                {
-                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
-                }
-                else
-                {
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
-                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
-                }
-                GetTimeseriesSettingvalue();
-            }
             else if (sender == ComboBoxTimeSeriesCategory)
             {
                 int targetValue = GetMachineId(ComboBoxTimeSeriesCategory.SelectedItem.ToString());
@@ -3298,9 +3343,9 @@ namespace TorusWPF
             _OffChanged = true;
             ComboBoxTimeSeriesStatus.Items.Clear();
             ComboBoxTimeSeriesMode.Items.Clear();
-            ComboBoxTimeSeriesFrequency.Items.Clear();
             ComboBoxTimeSeriesCategory.Items.Clear();
             TextBoxTimeSeriesPeriod.Text = "";
+            TextBoxTimeSeriesFrequency.Text = "";
             TextBoxTimeSeriesSubCategory.Text = "";
             if (_timeseriesVendorCode != 1 && _timeseriesVendorCode != 5)//1=Fanuc, 2=KCNC
             {
@@ -3308,12 +3353,12 @@ namespace TorusWPF
                 ComboBoxTimeSeriesStatus.IsEnabled = false;
                 ComboBoxTimeSeriesMode.IsEnabled = false;
                 TextBoxTimeSeriesPeriod.IsEnabled = false;
+                TextBoxTimeSeriesFrequency.IsEnabled = false;
                 ButtonTimeSeriesPeriod.IsEnabled = false;
-                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                ButtonTimeSeriesFrequency.IsEnabled = false;
                 ComboBoxTimeSeriesCategory.IsEnabled = false;
                 TextBoxTimeSeriesSubCategory.IsEnabled = false;
                 ButtonTimeSeriesSubCategory.IsEnabled = false;
-
                 ButtonTimeseriesStart.IsEnabled = false;
                 ButtonTimeseriesStop.IsEnabled = false;
                 return;
@@ -3326,13 +3371,12 @@ namespace TorusWPF
             ComboBoxTimeSeriesStatus.Items.Add("5:수집 종료");
             ComboBoxTimeSeriesStatus.Items.Add("-1:연결 실패");
             ComboBoxTimeSeriesStatus.Items.Add("-2:설정값 적용 실패");
-            ComboBoxTimeSeriesMode.Items.Add("0:반복수집");
+            ComboBoxTimeSeriesMode.Items.Add("0:연속수집");
             ComboBoxTimeSeriesMode.Items.Add("1:1회수집");
             if (_timeseriesVendorCode == 1)
             {
-                ComboBoxTimeSeriesMode.Items.Add("2:반복수집(저밀도)");
+                ComboBoxTimeSeriesMode.Items.Add("2:연속수집(저밀도)");
             }
-            ComboBoxTimeSeriesFrequency.Items.Add("1000:1KHz");
             if (_timeseriesVendorCode == 1)
             {
                 ComboBoxTimeSeriesCategory.Items.Add("0:Axis-POSF,Spindle-CSPOS");
@@ -3487,7 +3531,8 @@ namespace TorusWPF
                                 ComboBoxTimeSeriesMode.IsEnabled = true;
                                 TextBoxTimeSeriesPeriod.IsEnabled = true;
                                 ButtonTimeSeriesPeriod.IsEnabled = true;
-                                ComboBoxTimeSeriesFrequency.IsEnabled = true;
+                                ButtonTimeSeriesFrequency.IsEnabled = true;
+                                TextBoxTimeSeriesFrequency.IsEnabled = true;
                                 ComboBoxTimeSeriesCategory.IsEnabled = true;
                                 TextBoxTimeSeriesSubCategory.IsEnabled = true;
                                 ButtonTimeSeriesSubCategory.IsEnabled = true;
@@ -3497,7 +3542,8 @@ namespace TorusWPF
                                 ComboBoxTimeSeriesMode.IsEnabled = false;
                                 TextBoxTimeSeriesPeriod.IsEnabled = false;
                                 ButtonTimeSeriesPeriod.IsEnabled = false;
-                                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                                ButtonTimeSeriesFrequency.IsEnabled = false;
+                                TextBoxTimeSeriesFrequency.IsEnabled = false;
                                 ComboBoxTimeSeriesCategory.IsEnabled = false;
                                 TextBoxTimeSeriesSubCategory.IsEnabled = false;
                                 ButtonTimeSeriesSubCategory.IsEnabled = false;
@@ -3519,10 +3565,7 @@ namespace TorusWPF
                         else if (i == 8)//data://machine/buffer/stream/streamFrequency
                         {
                             int value = itemArray[i].GetValueInt("value");
-                            if (value == 1000)
-                            {
-                                ComboBoxTimeSeriesFrequency.SelectedIndex = 0;
-                            }
+                            TextBoxTimeSeriesFrequency.Text = value.ToString();
                         }
                         else if (i == 10)//data://machine/buffer/stream/streamCategory
                         {
@@ -3560,6 +3603,27 @@ namespace TorusWPF
                 string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
                 Item InItem = Item.Parse(inputData);
                 int tmpResult = Api.updateData("data://machine/buffer/periodOfStream", "machine=" + tmpMachineID + "&buffer=1", InItem, out _, _userApiTimeout);
+                if (tmpResult == 0)
+                {
+                    System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
+                }
+                else
+                {
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
+                    System.Windows.MessageBox.Show("변경 실패\n" + tmpErrorMessage, tmpErrorCode);
+                }
+                GetTimeseriesSettingvalue();
+            }
+            else if (sender == ButtonTimeSeriesFrequency)
+            {
+                if (!int.TryParse(TextBoxTimeSeriesFrequency.Text, out int targetValue))
+                {
+                    return;
+                }
+                int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
+                string inputData = "{\"value\":[" + targetValue.ToString() + "]}";
+                Item InItem = Item.Parse(inputData);
+                int tmpResult = Api.updateData("data://machine/buffer/stream/streamFrequency", "machine=" + tmpMachineID + "&buffer=1&stream=1", InItem, out _, _userApiTimeout);
                 if (tmpResult == 0)
                 {
                     System.Windows.MessageBox.Show("변경에 성공했습니다.", "성공");
@@ -3643,7 +3707,8 @@ namespace TorusWPF
                 ComboBoxTimeSeriesMode.IsEnabled = false;
                 TextBoxTimeSeriesPeriod.IsEnabled = false;
                 ButtonTimeSeriesPeriod.IsEnabled = false;
-                ComboBoxTimeSeriesFrequency.IsEnabled = false;
+                ButtonTimeSeriesFrequency.IsEnabled = false;
+                TextBoxTimeSeriesFrequency.IsEnabled = false;
                 ComboBoxTimeSeriesCategory.IsEnabled = false;
                 TextBoxTimeSeriesSubCategory.IsEnabled = false;
                 ButtonTimeSeriesSubCategory.IsEnabled = false;
