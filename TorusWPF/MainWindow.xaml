@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.15" Height="920" Width="1880">
+        Title="TorusTester C# v2.3.16" Height="920" Width="1880">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="810"></ColumnDefinition>
@@ -253,37 +253,189 @@
                 <TabItem Header="Timeseries">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="100"></RowDefinition>
+                            <RowDefinition Height="180"></RowDefinition>
                             <RowDefinition Height="45"></RowDefinition>
                             <RowDefinition Height="1*"></RowDefinition>
                         </Grid.RowDefinitions>
-                        <Grid Grid.Row="0">
-                            <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" Text="TimeSeries MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
-                            <ComboBox x:Name="ComboBoxTimeSeriesMachieID" HorizontalAlignment="Left" Margin="130,10,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeriesMachieID_SelectionChanged"/>
-                            <TextBlock x:Name="TextBlockTimeSeriesVendorCode" HorizontalAlignment="Left" Margin="310,10,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="TimeSeries Status:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
-                            <ComboBox x:Name="ComboBoxTimeSeriesStatus" HorizontalAlignment="Left" Margin="130,40,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="10,70,0,0" Text="TimeSeries Mode:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
-                            <ComboBox x:Name="ComboBoxTimeSeriesMode" HorizontalAlignment="Left" Margin="130,70,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="310,40,0,0" Text="TimeSeries Period(ms):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
-                            <TextBox x:Name="TextBoxTimeSeriesPeriod" HorizontalAlignment="Left" Margin="430,40,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
-                            <Button x:Name="ButtonTimeSeriesPeriod" Content="적용" HorizontalAlignment="Left" Margin="540,40,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="310,70,0,0" Text="TimeSeries Frequency(Hz):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>
-                            <TextBox x:Name="TextBoxTimeSeriesFrequency" HorizontalAlignment="Left" Margin="430,70,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
-                            <Button x:Name="ButtonTimeSeriesFrequency" Content="적용" HorizontalAlignment="Left" Margin="540,70,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="610,40,0,0" Text="TimeSeries Category:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
-                            <ComboBox x:Name="ComboBoxTimeSeriesCategory" HorizontalAlignment="Left" Margin="730,40,0,0" VerticalAlignment="Top" Width="150" Height="20" SelectionChanged="ComboBoxTimeSeries_SelectionChanged"/>
-                            <TextBlock HorizontalAlignment="Left" Margin="610,70,0,0" Text="TimeSeries SubCategory:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="10"/>
-                            <TextBox x:Name="TextBoxTimeSeriesSubCategory" HorizontalAlignment="Left" Margin="730,70,0,0" VerticalAlignment="Top" Width="100" Height="20"/>
-                            <Button x:Name="ButtonTimeSeriesSubCategory" Content="적용" HorizontalAlignment="Left" Margin="840,70,0,0" VerticalAlignment="Top" Width="40" Height="20" Click="ButtonTimeSeries_Click"/>
+                        <Grid Grid.Row="0" Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="1*"/>
+                                <RowDefinition Height="1.2*"/>
+                                <RowDefinition Height="1.2*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                    <TextBlock HorizontalAlignment="Left" Margin="2,0,0,0" Width="150" Text="TimeSeries MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                    <ComboBox x:Name="ComboBoxTimeSeriesMachieID" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="80" Height="20" SelectionChanged="ComboBoxTimeSeriesMachieID_SelectionChanged"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                    <TextBlock x:Name="TextBlockTimeSeriesVendorCode" HorizontalAlignment="Left" Margin="2,0,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock HorizontalAlignment="Left" Margin="2,0,0,0" Width="150" Text="TimeSeries Frequency(Hz):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                        <TextBox x:Name="TextBoxTimeSeriesFrequency" HorizontalAlignment="Left" Text="1000" Margin="0,0,0,0" VerticalAlignment="Top" Width="80" Height="20"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock HorizontalAlignment="Left" Margin="2,0,0,0" Width="150" Text="TimeSeries Period(ms):" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                        <TextBox x:Name="TextBoxTimeSeriesPeriod" HorizontalAlignment="Left" Text="1000" Margin="0,0,0,0" VerticalAlignment="Top" Width="80" Height="20"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="3">
+                                    <RadioButton x:Name="RadioOptionTimeSeriesMode0" Content="연속 수집 (Mode: 0)" IsChecked="True" GroupName="TimeSeriesMode" Margin="0,2,0,8"/>
+                                    <RadioButton x:Name="RadioOptionTimeSeriesMode1" Content="한정 수집 (Mode: 1)" GroupName="TimeSeriesMode" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream1" Content="Stream1" IsChecked="True"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory1" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20" Text="10"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory1" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20" Text="12"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="1">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream2" Content="Stream2"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory2" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory2" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="2">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream3" Content="Stream3"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory3" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory3" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="3">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream4" Content="Stream4"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory4" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory4" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream5" Content="Stream5"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory5" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory5" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="1">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream6" Content="Stream6"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory6" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory6" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="2">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream7" Content="Stream7"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory7" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory7" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Grid Grid.Column="3">
+                                    <Border BorderThickness="1" BorderBrush="Black" Padding="5" Margin="2,0">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                                                <CheckBox x:Name="CheckBoxTimeSeriesStream8" Content="Stream8"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="0,5,0,0">
+                                                <TextBlock HorizontalAlignment="Left" Margin="20,0,0,0" Text="Category: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesCategory8" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                                <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="SubCategory: " TextWrapping="NoWrap" VerticalAlignment="Top" Height="20" FontSize="11"/>
+                                                <TextBox x:Name="TextBoxTimeSeriesSubCategory8" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="45" Height="20"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
                         </Grid>
                         <Grid Grid.Row="1">
-                            <Button x:Name="ButtonTimeseriesStart" Content="Timeseries Start" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeseriesStart_Click"/>
-                            <Button x:Name="ButtonTimeseriesStop" Content="Timeseries Stop" HorizontalAlignment="Left" Margin="150,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeseriesStop_Click"/>
+                            <Button x:Name="ButtonTimeSeriesStart" Content="Timeseries Start" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeSeries_Click"/>
+                            <Button x:Name="ButtonTimeSeriesStop" Content="Timeseries Stop" IsEnabled="False" HorizontalAlignment="Left" Margin="150,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeSeries_Click"/>
                             <TextBlock x:Name="TextBlockTimeseries" HorizontalAlignment="Left" Margin="430,5,0,0" Text="Timeseries" TextWrapping="NoWrap" VerticalAlignment="Top" Height="30" FontSize="20"/>
                         </Grid>
-                        <Grid Grid.Row="2">
-                            <ScottPlot:WpfPlot x:Name="ScootPlotTimeseries" />
+                        <Grid Grid.Row="2" x:Name="PlotGrid">
+                            <!--<ScottPlot:WpfPlot x:Name="ScootPlotTimeseries" />-->
                         </Grid>
                     </Grid>
                 </TabItem>

@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.16
+- 시계열 데이터 스트림별 별개 그래프 표시
+
 v2.3.15
 - 시계열 데이터 스트림별 그래프 표시
 
