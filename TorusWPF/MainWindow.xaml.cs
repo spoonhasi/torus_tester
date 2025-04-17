@@ -39,6 +39,7 @@ namespace TorusWPF
     }
     public class TimeSeriesItem
     {
+#pragma warning disable IDE1006 // 명명 스타일
         public List<List<double>> value { get; set; }
         public List<long> starttimestamp { get; set; }
         public List<long> endtimestamp { get; set; }
@@ -50,6 +51,7 @@ namespace TorusWPF
         public string time { get; set; }
         public string address { get; set; }
         public string filter { get; set; }
+#pragma warning restore IDE1006 // 명명 스타일
     }
     public class MachineObject
     {
@@ -126,9 +128,7 @@ namespace TorusWPF
     public partial class MainWindow : System.Windows.Window
     {
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
-#pragma warning disable SYSLIB1054 // 컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
-#pragma warning restore SYSLIB1054 // 컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.
 
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
         private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
@@ -152,24 +152,23 @@ namespace TorusWPF
         }
 
         private List<MachineObject> _connectedMachineList = [];
-        private int _connectResult;
-        private int _cncVendorCode;
-        private int _timeseriesVendorCode;
+        private int _connectResult = -1;
+        private int _cncVendorCode = 0;
+        private int _timeseriesVendorCode = 0;
         private Thread _threadSingle;
         private bool _threadSignlestopFlag;
         private Thread _threadMulti;
         private bool _threadMultistopFlag;
         private string _commonFilter;
-        private int _signalCopyOrMove;
-        private string _addressFilePath;
+        private int _signalCopyOrMove = 0; // 0은 초기화, 1은 복사, 2는 이동
+        private string _addressFilePath = "";
+        private bool _isSingleRunning = false;
+        private bool _isMultiRunning = false;
         private bool _singleDirect;
         private bool _multiDirect;
         private int _timeout;
         private int _userApiTimeout;
-        private bool _isTimeSeriesCallbackRegistered;
-        private bool _OffChanged;
-        private bool _isSingleRunning;
-        private bool _isMultiRunning;
+        private bool _isTimeSeriesCallbackRegistered = false;
         private readonly object _lock = new();
         private readonly Dictionary<int, WpfPlot> _plotMap = [];
         private readonly List<int> _timeSeriesStreamList = [];
@@ -184,23 +183,14 @@ namespace TorusWPF
         private readonly double[][] _scatterX = new double[8][];
         private int _timeseriesMachineID = 0;
         private readonly Dictionary<int, ConcurrentQueue<double[]>[]> _timeSeriesQueues = [];
-        private CancellationTokenSource? _timeSeriesCTS;
-        private Task? _timeSeriesTask;
+        private CancellationTokenSource _timeSeriesCTS;
+        private Task _timeSeriesTask;
 
         public MainWindow()
         {
             InitializeComponent();
 
             // 소스코드의 Api폴더에 TORUS/Example_VS19/Api의 내용물을 복사해야 합니다. 본 App은 TORUS v2.3.2의 API로 제작되었습니다.
-
-            _isSingleRunning = false;
-            _isMultiRunning = false;
-            _OffChanged = true;
-            _isTimeSeriesCallbackRegistered = false;
-            _connectResult = -1;
-            _cncVendorCode = 0;
-            _timeseriesVendorCode = 0;
-            _signalCopyOrMove = 0; // 0은 초기화, 1은 복사, 2는 이동
             ButtonSingleStart.IsEnabled = false;
             ButtonSingleStop.IsEnabled = false;
             ButtonMultiStart.IsEnabled = false;
@@ -223,7 +213,7 @@ namespace TorusWPF
             TextBlockAddressFilePath.Text = "";
             TextBoxTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "Timeout", "100000");
             TextBoxUserApiTimeout.Text = ReadConfig(Constants.ConfigFileName, "Main", "UserApiTimeout", "100000");
-            _addressFilePath = "";
+            SetTimeout();
             TextBlockMemoryTotal.Text = "";
             TextBlockMemoryUsed.Text = "";
             TextBlockMemoryFree.Text = "";
@@ -250,18 +240,17 @@ namespace TorusWPF
                 _multiDirect = false;
             }
             TextBoxMonitoringInterval.Text = ReadConfig(Constants.ConfigFileName, "Main", "MonitoringInterval", "10");
-            SetTimeout();
-            //MachineStateModelSample.txt에 모든 MachineStateModel이 예시로 기록되어 있습니다. filter만 바꿔서 사용하면 됩니다.
-            string lastMachineStateModelFilePath = ReadConfig(Constants.ConfigFileName, "Main", "LastMachineStateModelFilePath");
-            if (lastMachineStateModelFilePath == "" || File.Exists(lastMachineStateModelFilePath) == false)
+            //MachineDataModelSample.txt에 모든 MachineDataModel이 예시로 기록되어 있습니다. filter만 바꿔서 사용하면 됩니다.
+            string lastMachineDataModelFilePath = ReadConfig(Constants.ConfigFileName, "Main", "LastMachineDataModelFilePath");
+            if (lastMachineDataModelFilePath == "" || File.Exists(lastMachineDataModelFilePath) == false)
             {
-                string defaultMachineStateModelFilePath = "../../../MachineStateModelSample.txt";
-                if (File.Exists(defaultMachineStateModelFilePath))
+                string defaultMachineDataModelFilePath = "../../../MachineDataModelSample.txt";
+                if (File.Exists(defaultMachineDataModelFilePath))
                 {
-                    lastMachineStateModelFilePath = Path.GetFullPath(defaultMachineStateModelFilePath);
+                    lastMachineDataModelFilePath = Path.GetFullPath(defaultMachineDataModelFilePath);
                 }
             }
-            LoadMachineStateModel(lastMachineStateModelFilePath);
+            LoadMachineDataModel(lastMachineDataModelFilePath);
         }
 
         ~MainWindow()
@@ -305,7 +294,8 @@ namespace TorusWPF
             _userApiTimeout = userApiTimeout;
             WriteConfig(Constants.ConfigFileName, "Main", "UserApiTimeout", userApiTimeout.ToString());
         }
-        // 사용자 함수의 사용 결과가 저장됩니다. MachineStateModel을 Load할 때마다 초기화 됩니다.
+
+        // 사용자 함수의 사용 결과가 저장됩니다. MachineDataModel을 Load할 때마다 초기화 됩니다.
         private void AddForTest(int _startNumber)
         {
             ListBoxMachineMission.Items.Clear();
@@ -359,15 +349,6 @@ namespace TorusWPF
             {
                 tmpGetDataAllCount = tmpMultiAllCount;
             }
-            double tmpGetDataPercent;
-            if (tmpGetDataAllCount == 0)
-            {
-                tmpGetDataPercent = 0;
-            }
-            else
-            {
-                tmpGetDataPercent = tmpGetDataSuccessCount / tmpGetDataAllCount * 100;
-            }
             double tmpMissionSuccessCount = Convert.ToInt32(TextBlockMissionSuccess.Text);
             double tmpMissionAllCount = Convert.ToInt32(TextBlockMissionAll.Text);
             double tmpTotalSuccess = tmpGetDataSuccessCount + tmpMissionSuccessCount;
@@ -419,12 +400,7 @@ namespace TorusWPF
             CalTotal();
         }
 
-        // TORUS에 연결 하는 함수입니다.
-        private void ButtonConnect_Click(object sender, RoutedEventArgs e)
-        {
-            Connect();
-        }
-        private void ButtonConnectWith_Click(object sender, RoutedEventArgs e)
+        private void ConnectWith()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new()
             {
@@ -544,19 +520,17 @@ namespace TorusWPF
             }
         }
 
-        // MachineStateModel을 불러오는 함수입니다.
-        private void LoadMachineStateModel(string _filePath)
+        // MachineDataModel을 불러오는 함수입니다.
+        private void LoadMachineDataModel(string filePath)
         {
-            bool fileExists = File.Exists(_filePath);
+            bool fileExists = File.Exists(filePath);
             if (fileExists == false)
             {
                 return;
             }
-            string directoryPath = Path.GetDirectoryName(_filePath);
-            WriteConfig(Constants.ConfigFileName, "Main", "LoadListFileDefaultDirPath", directoryPath);
             ListBoxMachineState.Items.Clear();
             MachineState.totalCount = 0;
-            string[] contents = System.IO.File.ReadAllLines(_filePath);
+            string[] contents = System.IO.File.ReadAllLines(filePath);
             if (contents.Length > 0)
             {
                 for (int i = 0; i < contents.Length; i++)
@@ -594,18 +568,23 @@ namespace TorusWPF
                     }
                 }
             }
-            TextBlockAddressFilePath.Text = _filePath;
-            _addressFilePath = _filePath;
+            TextBlockAddressFilePath.Text = filePath;
+            _addressFilePath = filePath;
             TextBlockMissionSuccess.Text = "0";
             TextBlockSingleAll.Text = ListBoxMachineState.Items.Count.ToString();
             TextBlockSinglePassedAll.Text = ListBoxMachineState.Items.Count.ToString();
             TextBlockMultiAll.Text = ListBoxMachineState.Items.Count.ToString();
             AddForTest(MachineState.totalCount);
-            WriteConfig(Constants.ConfigFileName, "Main", "LastMachineStateModelFilePath", _filePath);
+            string directoryPath = Path.GetDirectoryName(filePath);
+            if (directoryPath != null)
+            {
+                WriteConfig(Constants.ConfigFileName, "Main", "LoadListFileDefaultDirPath", directoryPath);
+            }
+            WriteConfig(Constants.ConfigFileName, "Main", "LastMachineDataModelFilePath", filePath);
         }
 
 
-        private void ButtonLoad_Click(object sender, RoutedEventArgs e)
+        private void MachineDataModelLoad()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new()
             {
@@ -614,11 +593,11 @@ namespace TorusWPF
             };
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                LoadMachineStateModel(openFileDialog.FileName);
+                LoadMachineDataModel(openFileDialog.FileName);
             }
         }
 
-        private void ButtonNew_Click(object sender, RoutedEventArgs e)
+        private void MachineDataModelNew()
         {
             ListBoxMachineState.Items.Clear();
             MachineState.totalCount = 0;
@@ -631,7 +610,7 @@ namespace TorusWPF
             AddForTest(MachineState.totalCount);
         }
 
-        void SingleStart(bool check)
+        void SingleStart()
         {
             SetTimeout();
             if (ListBoxMachineState.Items.Count < 1)
@@ -658,7 +637,7 @@ namespace TorusWPF
                 }
             }
             _threadSignlestopFlag = false;
-            _threadSingle = new Thread(() => ThreadSingle(check))
+            _threadSingle = new Thread(() => ThreadSingle())
             {
                 IsBackground = true
             };
@@ -666,7 +645,7 @@ namespace TorusWPF
             ButtonSingleStop.IsEnabled = true;
         }
 
-        private void ThreadSingle(bool check)
+        private void ThreadSingle()
         {
             long tmpTotalTime = 0;
             long tmpOneTurnTime = 0;
@@ -1076,7 +1055,7 @@ namespace TorusWPF
             }
             else if (result == "0x21B84000")
             {
-                _errCodeString = "NC_ERR_WRONG_TOOL_MODE";
+                _errCodeString = "NC_ERR_WRONG_TOOL_SYSTEM";
             }
             else if (result == "0x21B85000")
             {
@@ -1113,6 +1092,14 @@ namespace TorusWPF
             else if (result == "0x21BC1100")
             {
                 _errCodeString = "NC_ERR_NO_OBJECT_IN_LOCAL";
+            }
+            else if (result == "0x21BC1200")
+            {
+                _errCodeString = "NC_ERR_WRONG_PATH_IN_NC";
+            }
+            else if (result == "0x21BC1300")
+            {
+                _errCodeString = "NC_ERR_WRONG_PATH_IN_LOCAL";
             }
             else if (result == "0x21BC2000")
             {
@@ -1166,11 +1153,11 @@ namespace TorusWPF
             {
                 _errCodeString = "NC_ERR_NULL_VALUE";
             }
-            else if (result == "0X20206028")
+            else if (result == "0x20206028")
             {
                 _errCodeString = "MgrCommunication Address 또는 Filter 오류";
             }
-            else if (result == "0X2150001C")
+            else if (result == "0x2150001C")
             {
                 _errCodeString = "LibRpcClient Connect 오류";
             }
@@ -1441,7 +1428,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonMakeNewFile_Click(object sender, RoutedEventArgs e)
+        private void MakeNewFile()
         {
             SetTimeout();
             string tmpCurrentPath = TextBoxCurrentPath.Text;
@@ -1467,7 +1454,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonMakeNewDir_Click(object sender, RoutedEventArgs e)
+        private void MakeNewDir()
         {
             SetTimeout();
             string tmpCurrentPath = TextBoxCurrentPath.Text;
@@ -1503,8 +1490,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CNCFileRename(tmpCurrentPath + _oldName, _newName, out item, tmpMachineID, _userApiTimeout);
+            int result = Api.CNCFileRename(tmpCurrentPath + _oldName, _newName, out _, tmpMachineID, _userApiTimeout);
             if (result == 0)
             {
                 CheckForTest("CNCFileRename", true);
@@ -1514,13 +1500,12 @@ namespace TorusWPF
             else
             {
                 CheckForTest("CNCFileRename", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("이름 변경 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
 
-        private void ButtonCopyOrMove_Click(object sender, RoutedEventArgs e)
+        private void CopyOrMove()
         {
             SetTimeout();
             if (_signalCopyOrMove == 0) // 0은 초기화, 1은 복사, 2는 이동
@@ -1555,8 +1540,7 @@ namespace TorusWPF
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
             if (_signalCopyOrMove == 1)
             {
-                Item item;
-                int result = Api.CNCFileCopy(tmpCopyOrMove, tmpCurrentPath + fileName, out item, tmpMachineID, _userApiTimeout);
+                int result = Api.CNCFileCopy(tmpCopyOrMove, tmpCurrentPath + fileName, out _, tmpMachineID, _userApiTimeout);
                 if (result == 0)
                 {
                     CheckForTest("CNCFileCopy", true);
@@ -1565,15 +1549,13 @@ namespace TorusWPF
                 else
                 {
                     CheckForTest("CNCFileCopy", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("복사 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
             else if (_signalCopyOrMove == 2)
             {
-                Item item;
-                int result = Api.CNCFileMove(tmpCopyOrMove, tmpCurrentPath + fileName, out item, tmpMachineID, _userApiTimeout);
+                int result = Api.CNCFileMove(tmpCopyOrMove, tmpCurrentPath + fileName, out _, tmpMachineID, _userApiTimeout);
                 if (result == 0)
                 {
                     CheckForTest("CNCFileMove", true);
@@ -1584,15 +1566,14 @@ namespace TorusWPF
                 else
                 {
                     CheckForTest("CNCFileMove", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("이동 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
             ShowFileList(tmpCurrentPath);
         }
 
-        public void DeleteOneItem(string _objectName, bool _isDir)
+        public void DeleteOneItem(string _objectName)
         {
             SetTimeout();
             if (System.Windows.MessageBox.Show("삭제하시겠습니까?", "확인", MessageBoxButton.YesNo) == MessageBoxResult.No)
@@ -1608,8 +1589,7 @@ namespace TorusWPF
             }
             tmpObjectName = tmpCurrentPath + tmpObjectName;
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CNCFileDelete(tmpObjectName, out item, tmpMachineID, _userApiTimeout);
+            int result = Api.CNCFileDelete(tmpObjectName, out _, tmpMachineID, _userApiTimeout);
             if (result == 0)
             {
                 CheckForTest("CNCFileDelete", true);
@@ -1619,13 +1599,12 @@ namespace TorusWPF
             else
             {
                 CheckForTest("CNCFileDelete", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("삭제 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
 
-        private void ButtonDeleteAll_Click(object sender, RoutedEventArgs e)
+        private void DeleteAll()
         {
             SetTimeout();
             string tmpCurrentPath = TextBoxCurrentPath.Text;
@@ -1639,8 +1618,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CNCFileDeleteAll(tmpCurrentPath, out item, tmpMachineID, _userApiTimeout);
+            int result = Api.CNCFileDeleteAll(tmpCurrentPath, out _, tmpMachineID, _userApiTimeout);
             if (result == 0)
             {
                 CheckForTest("CNCFileDeleteAll", true);
@@ -1649,8 +1627,7 @@ namespace TorusWPF
             else
             {
                 CheckForTest("CNCFileDeleteAll", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("하위 항목 삭제 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
             ShowFileList(TextBoxCurrentPath.Text);
@@ -1682,8 +1659,7 @@ namespace TorusWPF
                 return;
             }
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
-            Item item;
-            int result = Api.CNCFileExecute(tmpChannel, tmpObjectName, out item, tmpMachineID, _userApiTimeout);
+            int result = Api.CNCFileExecute(tmpChannel, tmpObjectName, out _, tmpMachineID, _userApiTimeout);
             if (result == 0)
             {
                 CheckForTest("CNCFileExecute", true);
@@ -1698,7 +1674,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonGetExecuteExtern_Click(object sender, RoutedEventArgs e)
+        private void GetExecuteExtern()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -1718,8 +1694,7 @@ namespace TorusWPF
                 return;
             }
             string tmpPath = TextBoxExecuteExternPath.Text.ToString();
-            Item tmpItem;
-            int tmpResult = Api.CNCFileExecuteExtern(tmpChannel, tmpPath, out tmpItem, tmpMachineID, _userApiTimeout);
+            int tmpResult = Api.CNCFileExecuteExtern(tmpChannel, tmpPath, out Item tmpItem, tmpMachineID, _userApiTimeout);
             if (tmpResult == 0 && tmpItem != null)
             {
                 string tmpString = tmpItem.ToString();
@@ -1731,13 +1706,12 @@ namespace TorusWPF
             {
                 CheckForTest("CNCFileExecuteExtern", false);
                 TextBoxExecuteExternResult.Text = "";
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("ExecuteExtern 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
 
-        private void ButtonUpload_Click(object sender, RoutedEventArgs e)
+        private void Upload()
         {
             SetTimeout();
             string tmpCurrentPath = TextBoxCurrentPath.Text;
@@ -1777,8 +1751,7 @@ namespace TorusWPF
             else
             {
                 CheckForTest("uploadFile", false);
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("업로드 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
             ShowFileList(TextBoxCurrentPath.Text);
@@ -1840,14 +1813,13 @@ namespace TorusWPF
                 else
                 {
                     CheckForTest("downloadFile", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(result, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(result, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("다운로드 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
         }
 
-        private void ButtonGetPlc_Click(object sender, RoutedEventArgs e)
+        private void GetPlc()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -1861,8 +1833,7 @@ namespace TorusWPF
                 int tmpDataType = Convert.ToInt32(TextBoxPlcFanucType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcFanucStart.Text.ToString();
                 string tmpEndAddress = TextBoxPlcFanucEnd.Text.ToString();
-                Item tmpItem;
-                int tmpResult = Api.getPlcSignal((Api.FANUC_PLC_TYPE)tmpDataType, tmpStartAddress, tmpEndAddress, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.getPlcSignal((Api.FANUC_PLC_TYPE)tmpDataType, tmpStartAddress, tmpEndAddress, out Item tmpItem, tmpMachineID, _userApiTimeout);
                 if (tmpResult == 0)
                 {
                     string tmpString = tmpItem.ToString();
@@ -1874,16 +1845,14 @@ namespace TorusWPF
                 {
                     TextBoxPlcResult.Text = "";
                     CheckForTest("getPLCSignal", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("getPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
             else if (_cncVendorCode == 2) //Siemens
             {
                 string tmpAddress = TextBoxPlcSiemensAddress.Text.ToString();
-                Item tmpItem;
-                int tmpResult = Api.getPlcSignal(tmpAddress, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.getPlcSignal(tmpAddress, out Item tmpItem, tmpMachineID, _userApiTimeout);
                 if (tmpResult == 0)
                 {
                     string tmpString = tmpItem.ToString();
@@ -1895,8 +1864,7 @@ namespace TorusWPF
                 {
                     TextBoxPlcResult.Text = "";
                     CheckForTest("getPLCSignal", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("getPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
@@ -1905,8 +1873,7 @@ namespace TorusWPF
                 int tmpDataType = Convert.ToInt32(TextBoxPlcKcncType.Text.ToString());
                 string tmpStartAddress = TextBoxPlcKcncStart.Text.ToString();
                 int tmpCount = Convert.ToInt32(TextBoxPlcKcncCount.Text.ToString());
-                Item tmpItem;
-                int tmpResult = Api.getPlcSignal(tmpDataType, tmpCount, tmpStartAddress, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.getPlcSignal(tmpDataType, tmpCount, tmpStartAddress, out Item tmpItem, tmpMachineID, _userApiTimeout);
                 if (tmpResult == 0)
                 {
                     string tmpString = tmpItem.ToString();
@@ -1918,8 +1885,7 @@ namespace TorusWPF
                 {
                     TextBoxPlcResult.Text = "";
                     CheckForTest("getPLCSignal", false);
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("getPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
@@ -1930,7 +1896,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonSetPlc_Click(object sender, RoutedEventArgs e)
+        private void SetPlc()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -1952,8 +1918,8 @@ namespace TorusWPF
                 {
                     inputValue[i] = Convert.ToDouble(inputDatas[i]);
                 }
-                Item tmpItem;
-                int tmpResult = Api.setPlcSignal((Api.FANUC_PLC_TYPE)tmpDataType, tmpStartAddress, tmpEndAddress, inputValue, out tmpItem, tmpMachineID, _userApiTimeout);
+
+                int tmpResult = Api.setPlcSignal((Api.FANUC_PLC_TYPE)tmpDataType, tmpStartAddress, tmpEndAddress, inputValue, out _, tmpMachineID, _userApiTimeout);
                 TextBoxPlcResult.Text = "";
                 if (tmpResult == 0)
                 {
@@ -1962,8 +1928,7 @@ namespace TorusWPF
                 }
                 else
                 {
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     CheckForTest("setPLCSignal", false);
                     System.Windows.MessageBox.Show("setPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
@@ -1979,8 +1944,7 @@ namespace TorusWPF
                 {
                     inputValue[i] = Convert.ToDouble(inputDatas[i]);
                 }
-                Item tmpItem;
-                int tmpResult = Api.setPlcSignal(tmpAddress, inputValue, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.setPlcSignal(tmpAddress, inputValue, out _, tmpMachineID, _userApiTimeout);
                 TextBoxPlcResult.Text = "";
                 if (tmpResult == 0)
                 {
@@ -1989,8 +1953,7 @@ namespace TorusWPF
                 }
                 else
                 {
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     CheckForTest("setPLCSignal", false);
                     System.Windows.MessageBox.Show("setPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
@@ -2008,8 +1971,8 @@ namespace TorusWPF
                 {
                     inputValue[i] = Convert.ToDouble(inputDatas[i]);
                 }
-                Item tmpItem;
-                int tmpResult = Api.setPlcSignal(tmpDataType, tmpCount, tmpStartAddress, inputValue, out tmpItem, tmpMachineID, _userApiTimeout);
+
+                int tmpResult = Api.setPlcSignal(tmpDataType, tmpCount, tmpStartAddress, inputValue, out _, tmpMachineID, _userApiTimeout);
                 TextBoxPlcResult.Text = "";
                 if (tmpResult == 0)
                 {
@@ -2018,8 +1981,7 @@ namespace TorusWPF
                 }
                 else
                 {
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     CheckForTest("setPLCSignal", false);
                     System.Windows.MessageBox.Show("setPLCSignal 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
@@ -2031,7 +1993,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonToUpperDir_Click(object sender, RoutedEventArgs e)
+        private void ToUpperDir()
         {
             SetTimeout();
             string tmpCurrentPath = TextBoxCurrentPath.Text;
@@ -2042,8 +2004,7 @@ namespace TorusWPF
             }
             string rootPath;
             string tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString()).ToString();
-            Item item;
-            int tmpResult = Api.getData("data://machine/ncmemory/rootpath", "machine=" + tmpMachineID, out item, true, _userApiTimeout);
+            int tmpResult = Api.getData("data://machine/ncmemory/rootpath", "machine=" + tmpMachineID, out Item item, true, _userApiTimeout);
             if (tmpResult == 0)
             {
                 rootPath = item.GetValueString("value");
@@ -2057,8 +2018,7 @@ namespace TorusWPF
             }
             else
             {
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("상위 폴더 조회 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
@@ -2067,8 +2027,7 @@ namespace TorusWPF
         {
             SetTimeout();
             string tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString()).ToString();
-            Item item;
-            int tmpResult = Api.getData("data://machine/cncvendor", "machine=" + tmpMachineID.ToString(), out item, true, _userApiTimeout);
+            int tmpResult = Api.getData("data://machine/cncvendor", "machine=" + tmpMachineID.ToString(), out Item item, true, _userApiTimeout);
             if (tmpResult == 0)
             {
                 _cncVendorCode = item.GetValueInt("value");
@@ -2127,7 +2086,7 @@ namespace TorusWPF
             TextBoxCopyOrMove.Text = "";
         }
 
-        private void ButtonGetGmodal_Click(object sender, RoutedEventArgs e)
+        private void GetGmodal()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2146,8 +2105,7 @@ namespace TorusWPF
                 System.Windows.MessageBox.Show("채널을 확인하시기 바랍니다.");
                 return;
             }
-            Item tmpItem;
-            int tmpResult = Api.getGModal(tmpChannel, out tmpItem, tmpMachineID, _userApiTimeout);
+            int tmpResult = Api.getGModal(tmpChannel, out Item tmpItem, tmpMachineID, _userApiTimeout);
             if (tmpResult == 0)
             {
                 string tmpString = tmpItem.ToString();
@@ -2159,13 +2117,12 @@ namespace TorusWPF
             {
                 CheckForTest("getGModal", false);
                 TextBoxGmodalResult.Text = "";
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("getGmodal 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
 
-        private void ButtonGetExModal_Click(object sender, RoutedEventArgs e)
+        private void GetExModal()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2185,8 +2142,7 @@ namespace TorusWPF
                 return;
             }
             string tmpModal = TextBoxExModalModal.Text.ToString();
-            Item tmpItem;
-            int tmpResult = Api.getExModal(tmpChannel, tmpModal, out tmpItem, tmpMachineID, _userApiTimeout);
+            int tmpResult = Api.getExModal(tmpChannel, tmpModal, out Item tmpItem, tmpMachineID, _userApiTimeout);
             if (tmpResult == 0)
             {
                 string tmpString = tmpItem.ToString();
@@ -2198,13 +2154,12 @@ namespace TorusWPF
             {
                 CheckForTest("getExModal", false);
                 TextBoxExModalResult.Text = "";
-                string tmpErrorMessage;
-                string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                 System.Windows.MessageBox.Show("getExModal 실패\n" + tmpErrorMessage, tmpErrorCode);
             }
         }
 
-        private void ButtonGetToolOffset_Click(object sender, RoutedEventArgs e)
+        private void GetToolOffset()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2227,8 +2182,7 @@ namespace TorusWPF
             {
                 string tmpType = TextBoxToolOffsetType.Text.ToString();
                 string tmpNumber = TextBoxToolOffsetNumber.Text.ToString();
-                Item tmpItem;
-                int tmpResult = Api.getToolOffsetData(tmpChannel.ToString(), tmpNumber, tmpType, true, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.getToolOffsetData(tmpChannel.ToString(), tmpNumber, tmpType, true, out Item tmpItem, tmpMachineID, _userApiTimeout);
                 if (tmpResult == 0)
                 {
                     string tmpString = tmpItem.ToString();
@@ -2240,8 +2194,7 @@ namespace TorusWPF
                 {
                     CheckForTest("getToolOffsetData", false);
                     TextBoxToolOffsetResult.Text = "";
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     System.Windows.MessageBox.Show("getToolOffsetData 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
             }
@@ -2253,7 +2206,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonSetToolOffset_Click(object sender, RoutedEventArgs e)
+        private void SetToolOffset()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2284,8 +2237,7 @@ namespace TorusWPF
                 {
                     inputValue[i] = Convert.ToDouble(inputDatas[i]);
                 }
-                Item tmpItem;
-                int tmpResult = Api.setToolOffsetData(tmpChannel.ToString(), tmpNumber, tmpType, inputValue, out tmpItem, tmpMachineID, _userApiTimeout);
+                int tmpResult = Api.setToolOffsetData(tmpChannel.ToString(), tmpNumber, tmpType, inputValue, out _, tmpMachineID, _userApiTimeout);
                 TextBoxToolOffsetResult.Text = "";
                 if (tmpResult == 0)
                 {
@@ -2294,8 +2246,7 @@ namespace TorusWPF
                 }
                 else
                 {
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     CheckForTest("setToolOffsetData", false);
                     System.Windows.MessageBox.Show("setToolOffsetData 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
@@ -2332,7 +2283,7 @@ namespace TorusWPF
             TextBoxCopyOrMove.Text = tmpCurrentPath + _objectName;
         }
 
-        private void ButtonUploadFileSelect_Click(object sender, RoutedEventArgs e)
+        private void UploadFileSelect()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new();
             openFileDialog.InitialDirectory = ReadConfig(Constants.ConfigFileName, "Main", "UploadFileDefaultDirPath");
@@ -2351,12 +2302,7 @@ namespace TorusWPF
             tmpRenameWindow.Show();
         }
 
-        private void ButtonRenew_Click(object sender, RoutedEventArgs e)
-        {
-            ShowFileList(TextBoxCurrentPath.Text);
-        }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
+        private void MachineDataModelSave()
         {
             if (_addressFilePath != "")
             {
@@ -2377,7 +2323,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonSaveAs_Click(object sender, RoutedEventArgs e)
+        private void MachineDataModelSaveAs()
         {
             System.Windows.Forms.SaveFileDialog saveFileDialog = new();
             saveFileDialog.Filter = "txt files (*.txt)|*.txt";
@@ -2391,9 +2337,9 @@ namespace TorusWPF
             }
         }
 
-        private int SaveAddressFile(string _addressFilePath)
+        private int SaveAddressFile(string addressFilePath)
         {
-            FileInfo fi = new FileInfo(_addressFilePath);
+            FileInfo fi = new(addressFilePath);
             if (fi.Exists)
             {
                 MessageBoxResult result = System.Windows.MessageBox.Show("기존 파일에 덮어 씌우시겠습니까?", "저장", MessageBoxButton.OKCancel);
@@ -2408,9 +2354,15 @@ namespace TorusWPF
             {
                 tmpsaveContents = tmpsaveContents + (ListBoxMachineState.Items[i] as MachineState).address + "\t" + (ListBoxMachineState.Items[i] as MachineState).filter + "\t" + (ListBoxMachineState.Items[i] as MachineState).TextBoxMemo.Text + "\n";
             }
-            File.WriteAllText(_addressFilePath, tmpsaveContents);
-            this._addressFilePath = _addressFilePath;
-            TextBlockAddressFilePath.Text = _addressFilePath;
+            File.WriteAllText(addressFilePath, tmpsaveContents);
+            _addressFilePath = addressFilePath;
+            TextBlockAddressFilePath.Text = addressFilePath;
+            string directoryPath = Path.GetDirectoryName(addressFilePath);
+            if (directoryPath != null)
+            {
+                WriteConfig(Constants.ConfigFileName, "Main", "LoadListFileDefaultDirPath", directoryPath);
+            }
+            WriteConfig(Constants.ConfigFileName, "Main", "LastMachineDataModelFilePath", addressFilePath);
             System.Windows.MessageBox.Show("저장완료", "성공");
             return 0;
         }
@@ -2478,7 +2430,7 @@ namespace TorusWPF
             }
         }
 
-        public string MakeSuccessMessage(Item _item)
+        public static string MakeSuccessMessage(Item _item)
         {
             string address = _item.GetValueString("address");
             string filter = _item.GetValueString("filter");
@@ -2549,7 +2501,7 @@ namespace TorusWPF
             return returnValue;
         }
 
-        private void ButtonInsertNewMachineState_Click(object sender, RoutedEventArgs e)
+        private void InsertNewMachineData()
         {
             if (_connectResult == 0 && ButtonMultiStart.IsEnabled == false)
             {
@@ -2601,7 +2553,7 @@ namespace TorusWPF
             }
         }
 
-        void MultiStart(bool check)
+        void MultiStart()
         {
             SetTimeout();
             if (ListBoxMachineState.Items.Count < 1)
@@ -2628,7 +2580,7 @@ namespace TorusWPF
                 }
             }
             _threadMultistopFlag = false;
-            _threadMulti = new Thread(() => ThreadMulti(check))
+            _threadMulti = new Thread(() => ThreadMulti())
             {
                 IsBackground = true
             };
@@ -2636,7 +2588,7 @@ namespace TorusWPF
             ButtonMultiStop.IsEnabled = true;
         }
 
-        private void ThreadMulti(bool check)
+        private void ThreadMulti()
         {
             long tmpTotalTime = 0;
             long tmpOneTurnTime = 0;
@@ -2856,7 +2808,7 @@ namespace TorusWPF
             }));
         }
 
-        private void ButtonGudGet_Click(object sender, RoutedEventArgs e)
+        private void GetGud()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2911,7 +2863,7 @@ namespace TorusWPF
             }
         }
 
-        private void ButtonGudSet_Click(object sender, RoutedEventArgs e)
+        private void SetGud()
         {
             SetTimeout();
             if (_connectResult != 0)
@@ -2922,8 +2874,6 @@ namespace TorusWPF
             int tmpMachineID = GetMachineId(ComboBoxMachieID.SelectedItem.ToString());
             if (_cncVendorCode == 2) //Siemens
             {
-                int tmpResult = -1;
-                Item tmpItem;
                 string tmpGudType = TextBoxGudType.Text;
                 int tmpGudNumber = Convert.ToInt32(TextBoxGudNumber.Text.ToString());
                 int tmpGudCount = Convert.ToInt32(TextBoxGudCount.Text.ToString());
@@ -2938,6 +2888,7 @@ namespace TorusWPF
                     System.Windows.MessageBox.Show("입력데이터의 양과 Count가 일치하지 않습니다.", "오류");
                     return;
                 }
+                int tmpResult;
                 if (tmpGudType == "0")
                 {
                     string[] inputValue = new string[inputDatasCount];
@@ -2945,7 +2896,7 @@ namespace TorusWPF
                     {
                         inputValue[i] = inputDatas[i];
                     }
-                    tmpResult = Api.setGudData(tmpGudNumber, tmpGudCount, tmpGudAdress, inputValue, out tmpItem, tmpMachineID, tmpGudChannel, _userApiTimeout);
+                    tmpResult = Api.setGudData(tmpGudNumber, tmpGudCount, tmpGudAdress, inputValue, out _, tmpMachineID, tmpGudChannel, _userApiTimeout);
                 }
                 else if (tmpGudType == "1")
                 {
@@ -2954,7 +2905,7 @@ namespace TorusWPF
                     {
                         inputValue[i] = Convert.ToDouble(inputDatas[i]);
                     }
-                    tmpResult = Api.setGudData(tmpGudNumber, tmpGudCount, tmpGudAdress, inputValue, out tmpItem, tmpMachineID, tmpGudChannel, _userApiTimeout);
+                    tmpResult = Api.setGudData(tmpGudNumber, tmpGudCount, tmpGudAdress, inputValue, out _, tmpMachineID, tmpGudChannel, _userApiTimeout);
                 }
                 else
                 {
@@ -2969,8 +2920,7 @@ namespace TorusWPF
                 }
                 else
                 {
-                    string tmpErrorMessage;
-                    string tmpErrorCode = MakeErrorMessage(tmpResult, out tmpErrorMessage);
+                    string tmpErrorCode = MakeErrorMessage(tmpResult, out string tmpErrorMessage);
                     CheckForTest("setGUD", false);
                     System.Windows.MessageBox.Show("setGUD 실패\n" + tmpErrorMessage, tmpErrorCode);
                 }
@@ -3019,54 +2969,6 @@ namespace TorusWPF
             return 0;
         }
 
-        public static void RunProcess(string filePath)
-        {
-            if (System.IO.File.Exists(filePath))
-            {
-                // ProcessStartInfo 설정
-                ProcessStartInfo processStartInfo = new()
-                {
-                    FileName = filePath, // 실행할 배치 파일
-                    WorkingDirectory = System.IO.Path.GetDirectoryName(filePath), // 배치 파일이 있는 폴더
-                    UseShellExecute = true // Windows 셸을 사용하여 실행
-                };
-                // Process 실행
-                using Process process = new();
-                process.StartInfo = processStartInfo;
-                process.Start();
-                process.WaitForExit(); // 프로세스가 종료될 때까지 기다림
-            }
-            else
-            {
-                MessageBox.Show("실행 파일을 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private bool FileSelector(string oldPath, out string newPath)
-        {
-            OpenFileDialog openFileDialog = new()
-            {
-                Title = "파일 열기",
-                Filter = "모든 파일 (*.*)|*.*",
-            };
-            if (oldPath != "")
-            {
-                string absolutePath = System.IO.Path.GetFullPath(oldPath);
-                string dirPath = System.IO.Path.GetDirectoryName(absolutePath);
-                if (dirPath != null)
-                {
-                    openFileDialog.InitialDirectory = dirPath;
-                }
-            }
-            if (openFileDialog.ShowDialog() == true)
-            {
-                newPath = openFileDialog.FileName;
-                return true;
-            }
-            newPath = "";
-            return false;
-        }
-
         private void SearchItem()
         {
             string targetText = TextBoxSearch.Text.ToLowerInvariant();
@@ -3099,29 +3001,52 @@ namespace TorusWPF
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void MachineMonitoringStart()
         {
-            if (sender == ButtonSingleStart)
+            bool isAllExit = true;
+            foreach (var item in ListBoxMachineMonitoringList.Items)
             {
-                SingleStart(false);
+                if (item is MachineMonitoringItem monitoring)
+                {
+                    if (!monitoring.IsExit())
+                    {
+                        isAllExit = false;
+                    }
+                }
             }
-            else if (sender == ButtonSingleStop)
+            if (!isAllExit)
             {
-                _threadSignlestopFlag = true;
+                return;
             }
-            else if (sender == ButtonMultiStart)
+            if (!int.TryParse(TextBoxMonitoringInterval.Text, out int interval))
             {
-                MultiStart(false);
+                System.Windows.MessageBox.Show("갱신 주기가 유효한 값이 아닙니다.", "오류");
+                return;
             }
-            else if (sender == ButtonMultiStop)
+            WriteConfig(Constants.ConfigFileName, "Main", "MonitoringInterval", interval.ToString());
+            foreach (var item in ListBoxMachineMonitoringList.Items)
             {
-                _threadMultistopFlag = true;
+                if (item is MachineMonitoringItem monitoring)
+                {
+                    monitoring.OnOff(true, interval);
+                }
             }
-            else if (sender == ButtonSearch)
+            ButtonMachineMonitoringStart.IsEnabled = false;
+            ButtonMachineMonitoringStop.IsEnabled = true;
+            TextBoxMonitoringInterval.IsEnabled = false;
+        }
+
+        private void MachineMonitoringStop()
+        {
+            ButtonMachineMonitoringStop.IsEnabled = false;
+            foreach (var item in ListBoxMachineMonitoringList.Items)
             {
-                SearchItem();
+                if (item is MachineMonitoringItem monitoring)
+                {
+                    monitoring.OnOff(false);
+                }
             }
-            else if (sender == ButtonMachineMonitoringStart)
+            while (true)
             {
                 bool isAllExit = true;
                 foreach (var item in ListBoxMachineMonitoringList.Items)
@@ -3134,57 +3059,148 @@ namespace TorusWPF
                         }
                     }
                 }
-                if (!isAllExit)
+                if (isAllExit)
                 {
-                    return;
+                    break;
                 }
-                if (!int.TryParse(TextBoxMonitoringInterval.Text, out int interval))
-                {
-                    System.Windows.MessageBox.Show("갱신 주기가 유효한 값이 아닙니다.", "오류");
-                    return;
-                }
-                WriteConfig(Constants.ConfigFileName, "Main", "MonitoringInterval", interval.ToString());
-                foreach (var item in ListBoxMachineMonitoringList.Items)
-                {
-                    if (item is MachineMonitoringItem monitoring)
-                    {
-                        monitoring.OnOff(true, interval);
-                    }
-                }
-                ButtonMachineMonitoringStart.IsEnabled = false;
-                ButtonMachineMonitoringStop.IsEnabled = true;
-                TextBoxMonitoringInterval.IsEnabled = false;
+            }
+            ButtonMachineMonitoringStart.IsEnabled = true;
+            TextBoxMonitoringInterval.IsEnabled = true;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender == ButtonConnect)
+            {
+                Connect();
+            }
+            else if (sender == ButtonConnectWith)
+            {
+                ConnectWith();
+            }
+            else if (sender == ButtonLoad)
+            {
+                MachineDataModelLoad();
+            }
+            else if (sender == ButtonNew)
+            {
+                MachineDataModelNew();
+            }
+            else if (sender == ButtonMakeNewFile)
+            {
+                MakeNewFile();
+            }
+            else if (sender == ButtonMakeNewDir)
+            {
+                MakeNewDir();
+            }
+            else if (sender == ButtonCopyOrMove)
+            {
+                CopyOrMove();
+            }
+            else if (sender == ButtonDeleteAll)
+            {
+                DeleteAll();
+            }
+            else if (sender == ButtonUpload)
+            {
+                Upload();
+            }
+            else if (sender == ButtonGetPlc)
+            {
+                GetPlc();
+            }
+            else if (sender == ButtonSetPlc)
+            {
+                SetPlc();
+            }
+            else if (sender == ButtonToUpperDir)
+            {
+                ToUpperDir();
+            }
+            else if (sender == ButtonGetGmodal)
+            {
+                GetGmodal();
+            }
+            else if (sender == ButtonGetExModal)
+            {
+                GetExModal();
+            }
+            else if (sender == ButtonGetToolOffset)
+            {
+                GetToolOffset();
+            }
+            else if (sender == ButtonSetToolOffset)
+            {
+                SetToolOffset();
+            }
+            else if (sender == ButtonUploadFileSelect)
+            {
+                UploadFileSelect();
+            }
+            else if (sender == ButtonRenew)
+            {
+                ShowFileList(TextBoxCurrentPath.Text);
+            }
+            else if (sender == ButtonSave)
+            {
+                MachineDataModelSave();
+            }
+            else if (sender == ButtonSaveAs)
+            {
+                MachineDataModelSaveAs();
+            }
+            else if (sender == ButtonInsertNewMachineData)
+            {
+                InsertNewMachineData();
+            }
+            else if (sender == ButtonGetGud)
+            {
+                GetGud();
+            }
+            else if (sender == ButtonSetGud)
+            {
+                SetGud();
+            }
+            else if (sender == ButtonGetExecuteExtern)
+            {
+                GetExecuteExtern();
+            }
+            else if (sender == ButtonSingleStart)
+            {
+                SingleStart();
+            }
+            else if (sender == ButtonTimeSeriesStart)
+            {
+                TimeSeriesStart();
+            }
+            else if (sender == ButtonTimeSeriesStop)
+            {
+                TimeSeriesStop();
+            }
+            else if (sender == ButtonSingleStop)
+            {
+                _threadSignlestopFlag = true;
+            }
+            else if (sender == ButtonMultiStart)
+            {
+                MultiStart();
+            }
+            else if (sender == ButtonMultiStop)
+            {
+                _threadMultistopFlag = true;
+            }
+            else if (sender == ButtonSearch)
+            {
+                SearchItem();
+            }
+            else if (sender == ButtonMachineMonitoringStart)
+            {
+                MachineMonitoringStart();
             }
             else if (sender == ButtonMachineMonitoringStop)
             {
-                ButtonMachineMonitoringStop.IsEnabled = false;
-                foreach (var item in ListBoxMachineMonitoringList.Items)
-                {
-                    if (item is MachineMonitoringItem monitoring)
-                    {
-                        monitoring.OnOff(false);
-                    }
-                }
-                while (true)
-                {
-                    bool isAllExit = true;
-                    foreach (var item in ListBoxMachineMonitoringList.Items)
-                    {
-                        if (item is MachineMonitoringItem monitoring)
-                        {
-                            if (!monitoring.IsExit())
-                            {
-                                isAllExit = false;
-                            }
-                        }
-                    }
-                    if (isAllExit)
-                    {
-                        break;
-                    }
-                }
-                ButtonMachineMonitoringStart.IsEnabled = true;
-                TextBoxMonitoringInterval.IsEnabled = true;
+                MachineMonitoringStop();
             }
         }
 
@@ -3209,74 +3225,6 @@ namespace TorusWPF
                     e.Handled = true;
                 }
             }
-        }
-
-        private void ComboBoxTimeSeries_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_OffChanged)
-            {
-                return;
-            }
-            SetTimeout();
-        }
-
-        private void InitTimeseries()
-        {
-            _OffChanged = true;
-
-            GetTimeseriesSettingvalue();
-            _OffChanged = false;
-        }
-
-        private void GetTimeseriesSettingvalue()
-        {
-            _OffChanged = true;
-            int tmpMachineID = GetMachineId(ComboBoxTimeSeriesMachieID.SelectedItem.ToString());
-            int tmpTotalCount = 15;
-            string[] addressArray = new string[tmpTotalCount];
-            string[] filter_Array = new string[tmpTotalCount];
-            addressArray[0] = "data://machine/buffer/statusOfStream";
-            filter_Array[0] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[1] = "data://machine/buffer/bufferEnabled";
-            filter_Array[1] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[2] = "data://machine/buffer/numberOfStream";
-            filter_Array[2] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[3] = "data://machine/buffer/modOfStream";
-            filter_Array[3] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[4] = "data://machine/buffer/machineChannelOfStream";
-            filter_Array[4] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[5] = "data://machine/buffer/periodOfStream";
-            filter_Array[5] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[6] = "data://machine/buffer/triggerOfStream";
-            filter_Array[6] = "machine=" + tmpMachineID + "&buffer=1";
-            addressArray[7] = "data://machine/buffer/stream/streamEnabled";
-            filter_Array[7] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[8] = "data://machine/buffer/stream/streamFrequency";
-            filter_Array[8] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[9] = "data://machine/buffer/stream/streamEnabled";
-            filter_Array[9] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[10] = "data://machine/buffer/stream/streamCategory";
-            filter_Array[10] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[11] = "data://machine/buffer/stream/streamSubcategory";
-            filter_Array[11] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[12] = "data://machine/buffer/stream/streamType";
-            filter_Array[12] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[13] = "data://machine/buffer/stream/streamStartBit";
-            filter_Array[13] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            addressArray[14] = "data://machine/buffer/stream/streamEndBit";
-            filter_Array[14] = "machine=" + tmpMachineID + "&buffer=1&stream=1";
-            Item[] itemArray = new Item[tmpTotalCount];
-
-            int tmpResult = Api.getData(addressArray, filter_Array, out itemArray, true, _userApiTimeout);
-            if (tmpResult == 558891055)
-            {
-                return;
-            }
-            else
-            {
-
-            }
-            _OffChanged = false;
         }
 
         private void ComboBoxTimeSeriesMachieID_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -3327,23 +3275,11 @@ namespace TorusWPF
                 _timeseriesVendorCode = 0;
                 TextBlockTimeSeriesVendorCode.Text = "VendorCode : 0 (오류)";
             }
-            InitTimeseries();
-        }
-
-        private void ButtonTimeSeries_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender == ButtonTimeSeriesStart)
-            {
-                TimeSeriesStart();
-            }
-            else if (sender == ButtonTimeSeriesStop)
-            {
-                TimeSeriesStop();
-            }
         }
 
         private async void TimeSeriesStart()
         {
+            SetTimeout();
             ButtonTimeSeriesStart.IsEnabled = false;
             TimeSeriesSettingLock(true);
             // 기존 루프 종료 요청
@@ -3492,7 +3428,8 @@ namespace TorusWPF
             for (int stream = 1; stream <= 8; stream++)
             {
                 bool isEnabled = streamEnabledList[stream - 1];
-                inputData = $"{{\"value\":[{isEnabled.ToString().ToLower()}]}}";
+                inputData = $"{{\"value\":[{isEnabled.ToString().ToLower()}]}}";//JSON형식에서 True,False는 허용안됨, true,false여야함
+                //inputData = $"{{\"value\":[{isEnabled.ToString()}]}}";
                 result = Api.updateData("data://machine/buffer/stream/streamEnabled", "machine=" + machineID + "&buffer=1&stream=" + stream, Item.Parse(inputData), out _, _timeout);
                 if (result != 0)
                 {
@@ -3572,6 +3509,7 @@ namespace TorusWPF
 
         private async void TimeSeriesStop()
         {
+            SetTimeout();
             ButtonTimeSeriesStop.IsEnabled = false;
             _ = Api.endTimeSeries(1, _timeseriesMachineID, _userApiTimeout);
             _timeSeriesCTS?.Cancel();
@@ -3910,22 +3848,7 @@ namespace TorusWPF
 
         private void ButtonEtc_Click(object sender, RoutedEventArgs e)
         {
-            //if (isDoubleRunning_)
-            //{
-            //    threadSignlestopFlag_ = true;
-            //    threadMultistopFlag_ = true;
-            //    ButtonSingleStop.IsEnabled = false;
-            //    ButtonEtc.Content = "Double Start";
-            //    isDoubleRunning_ = false;
-            //}
-            //else
-            //{
-            //    SingleStart(false);
-            //    MultiStart(false);
-            //    ButtonMultiStop.IsEnabled = false;
-            //    ButtonEtc.Content = "Double Stop";
-            //    isDoubleRunning_ = true;
-            //}
+
         }
     }
 }

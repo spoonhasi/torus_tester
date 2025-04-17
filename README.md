@@ -23,6 +23,9 @@ For detailed license information, please refer to the [LICENSE folder](LICENSE/)
 
 ## Updates
 ---
+v2.3.17
+- 사용하지 않는 함수 정리
+
 v2.3.16
 - 시계열 데이터 스트림별 별개 그래프 표시
 

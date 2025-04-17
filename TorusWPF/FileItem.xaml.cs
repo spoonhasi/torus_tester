@@ -53,7 +53,7 @@ namespace TorusWPF
 
         private void ButtonDelete_Click(object sender, RoutedEventArgs e)
         {
-            (App.Current.MainWindow as MainWindow).DeleteOneItem(objectName, isDir);
+            (App.Current.MainWindow as MainWindow).DeleteOneItem(objectName);
         }
 
         private void ButtonInto_Click(object sender, RoutedEventArgs e)

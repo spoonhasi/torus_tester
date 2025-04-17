@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -75,6 +76,11 @@ namespace TorusWPF
             TextBlockSaveStatus.Visibility = Visibility.Hidden;
             ListViewMachineList.ItemsSource = ncMachineList_;
             LoadPath();
+            string machineListXmlPath = TextBoxTorusMachineListPath.Text;
+            if (machineListXmlPath != "" && File.Exists(machineListXmlPath))
+            {
+                MachineListXmlRead(machineListXmlPath);
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -162,7 +168,7 @@ namespace TorusWPF
         {
             if (sender == ListViewMachineList)
             {
-                if (ListViewMachineList.SelectedItem is not NCmachine ncMachine)
+                if (ListViewMachineList.SelectedItem is not NCmachine)
                 {
                     ClearMachineListItem();
                 }

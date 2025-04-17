@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TorusWPF"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="TorusTester C# v2.3.16" Height="920" Width="1880">
+        Title="TorusTester C# v2.3.17" Height="920" Width="1880">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="810"></ColumnDefinition>
@@ -19,8 +19,8 @@
             </Grid.RowDefinitions>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                 <Grid Grid.Row="0" Height="475">
-                    <Button x:Name="ButtonConnect" Content="Connect" HorizontalAlignment="Left" Margin="10,20,0,0" VerticalAlignment="Top" Height="30" Width="130" Click="ButtonConnect_Click"/>
-                    <Button x:Name="ButtonConnectWith" Content="Connect With Map File" HorizontalAlignment="Left" Margin="150,20,0,0" VerticalAlignment="Top" Width="130" Height="30" FontSize="11" Click="ButtonConnectWith_Click"/>
+                    <Button x:Name="ButtonConnect" Content="Connect" HorizontalAlignment="Left" Margin="10,20,0,0" VerticalAlignment="Top" Height="30" Width="130" Click="Button_Click"/>
+                    <Button x:Name="ButtonConnectWith" Content="Connect With Map File" HorizontalAlignment="Left" Margin="150,20,0,0" VerticalAlignment="Top" Width="130" Height="30" FontSize="11" Click="Button_Click"/>
                     <Button x:Name="ButtonEtc" Content="TEST" HorizontalAlignment="Left" Margin="640,20,0,0" VerticalAlignment="Top" Width="90" Height="30" Click="ButtonEtc_Click" Visibility="Hidden"/>
                     <Grid Height="60" Width="130" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,60,0,0">
                         <TextBlock x:Name="TextBlockMissionSuccess" HorizontalAlignment="Right" Margin="0,20,110,0" Text="999" TextWrapping="Wrap" VerticalAlignment="Top"/>
@@ -94,11 +94,11 @@
                                 <TextBlock HorizontalAlignment="Left" Margin="110,66,0,0" Text="주소" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxPlcSiemensAddress" Margin="137,65,0,0" Text="DB10.DBB56[2]" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="213" Height="20"/>
                                 <TextBox x:Name="TextBoxPlcResult" Margin="70,90,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
-                                <Button x:Name="ButtonGetPlc" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="100" Click="ButtonGetPlc_Click"/>
+                                <Button x:Name="ButtonGetPlc" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="100" Click="Button_Click"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="32,115,0,0" Text="입력" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxPlcSetData" Margin="70,115,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="220" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="300,115,0,0" Text="콤마(,)로 입력값을 구분합니다." TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                                <Button x:Name="ButtonSetPlc" Content="Set" HorizontalAlignment="Left" Margin="510,115,0,0" VerticalAlignment="Top" Width="50" Click="ButtonSetPlc_Click"/>
+                                <Button x:Name="ButtonSetPlc" Content="Set" HorizontalAlignment="Left" Margin="510,115,0,0" VerticalAlignment="Top" Width="50" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="ToolOffset">
@@ -109,18 +109,18 @@
                                 <TextBox x:Name="TextBoxToolOffsetNumber" Margin="260,10,0,0" Text="1" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="실행결과" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxToolOffsetResult" Margin="70,40,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
-                                <Button x:Name="ButtonGetToolOffset" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="ButtonGetToolOffset_Click"/>
+                                <Button x:Name="ButtonGetToolOffset" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Button_Click"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="32,70,0,0" Text="입력" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxToolOffsetSetData" Margin="70,70,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="220" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="300,70,0,0" Text="콤마(,)로 입력값을 구분합니다." TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                                <Button x:Name="ButtonSetToolOffset" Content="Set" HorizontalAlignment="Left" Margin="510,70,0,0" VerticalAlignment="Top" Width="50" Click="ButtonSetToolOffset_Click"/>
+                                <Button x:Name="ButtonSetToolOffset" Content="Set" HorizontalAlignment="Left" Margin="510,70,0,0" VerticalAlignment="Top" Width="50" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="G-modal">
                             <Grid>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="실행결과" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxGmodalResult" Margin="70,40,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
-                                <Button x:Name="ButtonGetGmodal" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="ButtonGetGmodal_Click"/>
+                                <Button x:Name="ButtonGetGmodal" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="Ex-modal">
@@ -129,7 +129,7 @@
                                 <TextBox x:Name="TextBoxExModalModal" Margin="110,10,0,0" Text="M" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="실행결과" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxExModalResult" Margin="70,40,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
-                                <Button x:Name="ButtonGetExModal" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="ButtonGetExModal_Click"/>
+                                <Button x:Name="ButtonGetExModal" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="GUD(Siemens)">
@@ -146,10 +146,10 @@
                                 <TextBox x:Name="TextBoxGudAddress" Margin="70,60,0,0" Text="_SC_NCK_ROU_R" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="320" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,86,0,0" Text="Get" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxGudGet" Margin="70,85,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="320" Height="20"/>
-                                <Button x:Name="ButtonGudGet" Content="Get" HorizontalAlignment="Left" Margin="400,85,0,0" VerticalAlignment="Top" Width="50" Height="20" Click="ButtonGudGet_Click"/>
+                                <Button x:Name="ButtonGetGud" Content="Get" HorizontalAlignment="Left" Margin="400,85,0,0" VerticalAlignment="Top" Width="50" Height="20" Click="Button_Click"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,111,0,0" Text="Set" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxGudSet" Margin="70,110,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="320" Height="20"/>
-                                <Button x:Name="ButtonGudSet" Content="Set" HorizontalAlignment="Left" Margin="400,110,0,0" VerticalAlignment="Top" Width="50" Height="20" Click="ButtonGudSet_Click"/>
+                                <Button x:Name="ButtonSetGud" Content="Set" HorizontalAlignment="Left" Margin="400,110,0,0" VerticalAlignment="Top" Width="50" Height="20" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                         <TabItem Header="ExecuteExtern">
@@ -158,7 +158,7 @@
                                 <TextBox x:Name="TextBoxExecuteExternPath" Margin="70,10,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,40,0,0" Text="실행결과" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                                 <TextBox x:Name="TextBoxExecuteExternResult" Margin="70,40,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="420" Height="20"/>
-                                <Button x:Name="ButtonGetExecuteExtern" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="ButtonGetExecuteExtern_Click"/>
+                                <Button x:Name="ButtonGetExecuteExtern" Content="Get" HorizontalAlignment="Left" Margin="510,10,0,0" VerticalAlignment="Top" Width="50" Height="50" Click="Button_Click"/>
                             </Grid>
                         </TabItem>
                     </TabControl>
@@ -176,25 +176,25 @@
                         
                         <TextBlock HorizontalAlignment="Left" Margin="228,20,0,0" Text="업로드 파일" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxUpload" Margin="300,20,0,0" Text="" Width="230" Height="20" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                        <Button x:Name="ButtonUploadFileSelect" Content="업로드 파일선택" HorizontalAlignment="Left" Margin="540,20,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="ButtonUploadFileSelect_Click"/>
-                        <Button x:Name="ButtonUpload" Content="업로드" HorizontalAlignment="Left" Margin="660,20,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="ButtonUpload_Click"/>
+                        <Button x:Name="ButtonUploadFileSelect" Content="업로드 파일선택" HorizontalAlignment="Left" Margin="540,20,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="Button_Click"/>
+                        <Button x:Name="ButtonUpload" Content="업로드" HorizontalAlignment="Left" Margin="660,20,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="Button_Click"/>
                         <TextBlock HorizontalAlignment="Left" Margin="300,42,0,0" Text="다운로드 폴더" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxDownload" Margin="380,42,0,0" Text="C:/" Width="150" Height="20" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                         <TextBlock HorizontalAlignment="Left" Margin="230,42,0,0" Text="채널" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxChannel" Margin="260,42,0,0" Text="1" Width="30" Height="20" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                         <TextBlock x:Name="TextBlockCopyOrMove" HorizontalAlignment="Left" Margin="228,64,0,0" Text="복사 or 이동 대상 원본경로" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxCopyOrMove" Margin="380,64,0,0" Text="" Width="150" Height="20" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top" IsReadOnly="True"/>
-                        <Button x:Name="ButtonCopyOrMove" Content="붙여넣기" HorizontalAlignment="Left" Margin="540,64,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="ButtonCopyOrMove_Click"/>
+                        <Button x:Name="ButtonCopyOrMove" Content="붙여넣기" HorizontalAlignment="Left" Margin="540,64,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="Button_Click"/>
                         <CheckBox x:Name="CheckBoxShowDetail" Content="ListEx미사용(속도저하)" HorizontalAlignment="Left" Height="20" Margin="10,86,0,0" VerticalAlignment="Top" FontSize="11"/>
-                        <Button x:Name="ButtonRenew" Content="새로고침" HorizontalAlignment="Left" Margin="155,86,0,0" VerticalAlignment="Top" Width="60" Height="20" Click="ButtonRenew_Click"/>
+                        <Button x:Name="ButtonRenew" Content="새로고침" HorizontalAlignment="Left" Margin="155,86,0,0" VerticalAlignment="Top" Width="60" Height="20" Click="Button_Click"/>
                         <TextBlock HorizontalAlignment="Left" Margin="228,86,0,0" Text="생성할 폴더 혹은 파일 이름" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxNewObjectName" Margin="380,86,0,0" Text="" Width="150" Height="20" TextWrapping="Wrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                        <Button x:Name="ButtonMakeNewFile" Content="파일 생성" HorizontalAlignment="Left" Margin="540,86,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="ButtonMakeNewFile_Click"/>
-                        <Button x:Name="ButtonMakeNewDir" Content="폴더 생성" HorizontalAlignment="Left" Margin="660,86,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="ButtonMakeNewDir_Click"/>
+                        <Button x:Name="ButtonMakeNewFile" Content="파일 생성" HorizontalAlignment="Left" Margin="540,86,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="Button_Click"/>
+                        <Button x:Name="ButtonMakeNewDir" Content="폴더 생성" HorizontalAlignment="Left" Margin="660,86,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="Button_Click"/>
                         <TextBlock HorizontalAlignment="Left" Margin="10,108,0,0" Text="폴더" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
                         <TextBox x:Name="TextBoxCurrentPath" Margin="40,108,0,0" Text="" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Left" Width="490" Height="20"/>
-                        <Button x:Name="ButtonToUpperDir" Content="상위 폴더로 이동" HorizontalAlignment="Left" Margin="540,108,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="ButtonToUpperDir_Click"/>
-                        <Button x:Name="ButtonDeleteAll" Content="전부 삭제" HorizontalAlignment="Left" Margin="660,108,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="ButtonDeleteAll_Click"/>
+                        <Button x:Name="ButtonToUpperDir" Content="상위 폴더로 이동" HorizontalAlignment="Left" Margin="540,108,0,0" VerticalAlignment="Top" Width="110" Height="20" Click="Button_Click"/>
+                        <Button x:Name="ButtonDeleteAll" Content="전부 삭제" HorizontalAlignment="Left" Margin="660,108,0,0" VerticalAlignment="Top" Width="70" Height="20" Click="Button_Click"/>
                     </Grid>
                     <TextBlock HorizontalAlignment="Left" Margin="10,0,0,0" Text="파일목록의 이름 부분을 더블클릭하면 파일명을 변경할 수 있습니다." TextWrapping="NoWrap" VerticalAlignment="Bottom" Height="15" FontSize="10"/>
                 </Grid>
@@ -215,11 +215,11 @@
                         <Grid Grid.Row="0" Margin="5,0,0,0">
                             <TextBlock x:Name="TextBlockAddressFilePath" Margin="0,0,10,0" Text="AddressFilePath" TextWrapping="NoWrap" VerticalAlignment="Top"/>
                             <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
-                                <Button x:Name="ButtonLoad" Content="Data Model Load" HorizontalAlignment="Left" Width="100" Margin="0,0,10,0" Height="25" FontSize="11" Click="ButtonLoad_Click"/>
-                                <Button x:Name="ButtonSave" Content="Save" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="ButtonSave_Click"/>
-                                <Button x:Name="ButtonSaveAs" Content="Save as" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="ButtonSaveAs_Click"/>
-                                <Button x:Name="ButtonNew" Content="New" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="ButtonNew_Click"/>
-                                <Button x:Name="ButtonInsertNewMachineState" Content="Insert New Item" HorizontalAlignment="Left" Width="100" Height="25" Margin="0,0,40,0" Click="ButtonInsertNewMachineState_Click"/>
+                                <Button x:Name="ButtonLoad" Content="Data Model Load" HorizontalAlignment="Left" Width="100" Margin="0,0,10,0" Height="25" FontSize="11" Click="Button_Click"/>
+                                <Button x:Name="ButtonSave" Content="Save" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="Button_Click"/>
+                                <Button x:Name="ButtonSaveAs" Content="Save as" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="Button_Click"/>
+                                <Button x:Name="ButtonNew" Content="New" HorizontalAlignment="Left" Width="50" Height="25" Margin="0,0,10,0" Click="Button_Click"/>
+                                <Button x:Name="ButtonInsertNewMachineData" Content="Insert New Item" HorizontalAlignment="Left" Width="100" Height="25" Margin="0,0,40,0" Click="Button_Click"/>
                                 <TextBox x:Name="TextBoxSearch" Text="" TextWrapping="NoWrap" VerticalAlignment="Center" HorizontalAlignment="Left" Width="450" Height="25" Margin="0,0,10,0" KeyDown="TextBox_KeyDown"/>
                                 <Button x:Name="ButtonSearch" Content="Address Search" HorizontalAlignment="Left" Width="100" Height="25" Margin="0,0,10,0" Click="Button_Click"/>
                             </StackPanel>
@@ -250,11 +250,10 @@
                         </Grid>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Timeseries">
+                <TabItem Header="TimeSeries">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="180"></RowDefinition>
-                            <RowDefinition Height="45"></RowDefinition>
                             <RowDefinition Height="1*"></RowDefinition>
                         </Grid.RowDefinitions>
                         <Grid Grid.Row="0" Margin="10">
@@ -270,12 +269,18 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Orientation="Horizontal" Grid.Column="0">
-                                    <TextBlock HorizontalAlignment="Left" Margin="2,0,0,0" Width="150" Text="TimeSeries MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
-                                    <ComboBox x:Name="ComboBoxTimeSeriesMachieID" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="80" Height="20" SelectionChanged="ComboBoxTimeSeriesMachieID_SelectionChanged"/>
+                                <StackPanel Grid.Column="0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock HorizontalAlignment="Left" Margin="2,0,0,0" Width="150" Text="TimeSeries MachineID:" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                        <ComboBox x:Name="ComboBoxTimeSeriesMachieID" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Width="80" Height="20" SelectionChanged="ComboBoxTimeSeriesMachieID_SelectionChanged"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <TextBlock x:Name="TextBlockTimeSeriesVendorCode" HorizontalAlignment="Left" Margin="2,0,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Grid.Column="1">
-                                    <TextBlock x:Name="TextBlockTimeSeriesVendorCode" HorizontalAlignment="Left" Margin="2,0,0,0" Text="VenderCode" TextWrapping="NoWrap" VerticalAlignment="Top" Height="20"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button x:Name="ButtonTimeSeriesStart" Content="TimeSeries Start" HorizontalAlignment="Left" Margin="2,0,0,0" VerticalAlignment="Top" Width="110" Height="40" Click="Button_Click"/>
+                                    <Button x:Name="ButtonTimeSeriesStop" Content="TimeSeries Stop" IsEnabled="False" HorizontalAlignment="Left" Margin="2,0,0,0" VerticalAlignment="Top" Width="110" Height="40" Click="Button_Click"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <StackPanel Orientation="Horizontal">
@@ -429,12 +434,7 @@
                                 </Grid>
                             </Grid>
                         </Grid>
-                        <Grid Grid.Row="1">
-                            <Button x:Name="ButtonTimeSeriesStart" Content="Timeseries Start" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeSeries_Click"/>
-                            <Button x:Name="ButtonTimeSeriesStop" Content="Timeseries Stop" IsEnabled="False" HorizontalAlignment="Left" Margin="150,5,0,0" VerticalAlignment="Top" Width="130" Height="30" Click="ButtonTimeSeries_Click"/>
-                            <TextBlock x:Name="TextBlockTimeseries" HorizontalAlignment="Left" Margin="430,5,0,0" Text="Timeseries" TextWrapping="NoWrap" VerticalAlignment="Top" Height="30" FontSize="20"/>
-                        </Grid>
-                        <Grid Grid.Row="2" x:Name="PlotGrid">
+                        <Grid Grid.Row="1" x:Name="PlotGrid">
                             <!--<ScottPlot:WpfPlot x:Name="ScootPlotTimeseries" />-->
                         </Grid>
                     </Grid>
